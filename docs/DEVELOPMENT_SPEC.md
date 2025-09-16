@@ -7,56 +7,59 @@ finflow-tracker/
 ├── .github/
 │   ├── workflows/
 │   │   ├── ci.yml                 # Main CI pipeline
-│   │   ├── security.yml           # Security scanning
+│   │   ├── security.yml           # Security scanning (CRITICAL)
 │   │   └── deploy.yml             # Production deployment
 │   └── pull_request_template.md
 ├── src/
 │   ├── app/                      # Next.js App Router
-│   │   ├── api/                  # API routes
+│   │   ├── api/                  # API routes (ALL MUST BE PROTECTED)
 │   │   │   ├── auth/
 │   │   │   ├── accounts/
 │   │   │   ├── institutions/
-│   │   │   └── portfolio/
+│   │   │   ├── brokerage/
+│   │   │   ├── portfolio/
+│   │   │   ├── exchange/
+│   │   │   └── export/
 │   │   ├── (auth)/               # Auth-protected pages
 │   │   │   ├── dashboard/
 │   │   │   ├── accounts/
 │   │   │   └── analytics/
 │   │   ├── login/
-│   │   ├── register/
 │   │   └── layout.tsx
 │   ├── components/               # React components
-│   │   ├── ui/                  # Base UI components
-│   │   ├── charts/              # Chart components
+│   │   ├── ui/                  # Base UI components (shadcn/ui)
+│   │   ├── charts/              # Chart components (Recharts)
 │   │   ├── forms/               # Form components
 │   │   └── layout/              # Layout components
 │   ├── lib/                     # Utilities and libraries
 │   │   ├── auth.ts              # Authentication helpers
-│   │   ├── db.ts                # Database client
+│   │   ├── db.ts                # Database client (Prisma)
 │   │   ├── exchange-rates.ts    # Exchange rate utilities
-│   │   └── validators.ts        # Input validators
+│   │   ├── validators.ts        # Zod input validators
+│   │   └── security.ts          # Security utilities
 │   ├── hooks/                   # Custom React hooks
 │   ├── types/                   # TypeScript type definitions
-│   └── styles/                  # Global styles
+│   └── styles/                  # Global styles (Tailwind)
 ├── prisma/
 │   ├── schema.prisma            # Database schema
-│   ├── seed.ts                  # Database seeding
 │   └── migrations/              # Database migrations
-├── public/                      # Static assets
+├── public/                      # Static assets (minimal)
 ├── tests/
 │   ├── unit/                   # Unit tests
 │   ├── integration/             # Integration tests
 │   └── e2e/                     # End-to-end tests
 ├── scripts/
 │   ├── setup-dev.sh             # Development setup script
+│   ├── setup-admin.js           # Create admin user securely
 │   └── check-env.js             # Environment validation
 ├── docs/
 │   ├── PRODUCT_SPEC.md
 │   ├── TECHNICAL_SPEC.md
 │   ├── DEVELOPMENT_SPEC.md
-│   ├── API.md                   # API documentation
 │   └── CONTRIBUTING.md          # Contributing guidelines
-├── .env.example                 # Environment variables template
+├── .env.example                 # Environment template (NO SECRETS!)
 ├── .gitignore
+├── .gitleaksignore             # Gitleaks configuration
 ├── .eslintrc.json              # ESLint configuration
 ├── .prettierrc                 # Prettier configuration
 ├── next.config.js              # Next.js configuration
@@ -176,7 +179,18 @@ on:
     branches: [main]
 
 jobs:
+  # Security check FIRST - fail fast if secrets detected
+  security-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
   lint:
+    needs: security-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -189,6 +203,7 @@ jobs:
       - run: npm run type-check
 
   test:
+    needs: security-check
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -214,6 +229,7 @@ jobs:
       - run: npm run test:integration
 
   build:
+    needs: [lint, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -227,25 +243,36 @@ jobs:
 
 #### 2. Security Scanning (`.github/workflows/security.yml`)
 ```yaml
-name: Security
+name: Security Audit
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 0 * * 1'  # Weekly on Monday
 
 jobs:
+  # CRITICAL: Detect exposed secrets
   secret-scanning:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Full history for better detection
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check .env.example
+        run: |
+          if grep -E "(password|secret|key|token)=" .env.example; then
+            echo "ERROR: .env.example contains sensitive-looking values!"
+            exit 1
+          fi
 
-  dependency-check:
+  dependency-audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -253,16 +280,17 @@ jobs:
         with:
           node-version: '20'
       - run: npm audit --audit-level=moderate
-      - run: npx snyk test
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Check for known vulnerabilities
+        run: npm audit --json | jq '.vulnerabilities | length' | xargs -I {} test {} -eq 0
 
-  code-scanning:
+  code-quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+      - name: Check for hardcoded secrets
+        run: |
+          # Check for common secret patterns
+          ! grep -r "ADMIN_PASSWORD\|DATABASE_URL\|NEXTAUTH_SECRET" --include="*.ts" --include="*.tsx" --include="*.js" src/
 ```
 
 #### 3. Deployment (`.github/workflows/deploy.yml`)
@@ -516,23 +544,46 @@ test('user can login', async ({ page }) => {
 - [ ] Error handling implemented
 - [ ] Accessibility maintained
 
-## Security Practices
+## Security Practices (CRITICAL)
 
-### Never Commit
-- API keys
-- Database credentials
-- JWT secrets
-- Personal data
-- `.env.local` files
+### NEVER Commit (Will Fail CI)
+- API keys or tokens
+- Database credentials  
+- JWT secrets or NEXTAUTH_SECRET
+- Admin username/password (even hashed)
+- Personal financial data
+- `.env.local` or any `.env` files with values
+- Exchange rate API keys
 
-### Always Use
-- Environment variables for secrets
-- Parameterized queries
-- Input validation
-- Output encoding
-- HTTPS in production
-- Authentication checks
-- Rate limiting
+### Security Checklist for Every PR
+- [ ] No hardcoded credentials anywhere
+- [ ] All API routes use `withAuth` middleware
+- [ ] Input validation with Zod schemas
+- [ ] No console.log of sensitive data
+- [ ] Environment variables properly used
+- [ ] Dependencies audited (npm audit)
+- [ ] No SQL string concatenation
+
+### Required Security Measures
+```typescript
+// ALWAYS protect API routes
+export default withAuth(async function handler(req, res) {
+  // Your code here
+});
+
+// ALWAYS validate inputs
+const validated = accountUpdateSchema.parse(req.body);
+
+// ALWAYS use parameterized queries (Prisma does this)
+await prisma.account.update({
+  where: { id: accountId },
+  data: validated
+});
+
+// NEVER log sensitive data
+console.log('User logged in'); // OK
+console.log(`Password: ${password}`); // NEVER DO THIS
+```
 
 ## Performance Guidelines
 
