@@ -4,26 +4,25 @@
 
 ### Technology Stack
 - **Frontend**: Next.js 14+ with React 18 and TypeScript
-- **Styling**: Tailwind CSS with shadcn/ui components
+- **Styling**: Tailwind CSS with shadcn/ui components  
 - **Backend**: Next.js API Routes
 - **Database**: PostgreSQL (Neon cloud hosting)
 - **ORM**: Prisma
-- **Authentication**: NextAuth.js with credentials provider
+- **Authentication**: Simple username/password (NextAuth.js with credentials provider)
 - **State Management**: React Context + SWR for data fetching
-- **Charts**: Recharts or Chart.js
+- **Charts**: Recharts for interactive visualizations
 - **Deployment**: Vercel
 - **Monitoring**: Vercel Analytics
 
 ## Database Design
 
-### Schema Definition
+### Core Schema
 
 ```sql
--- Users table for authentication
+-- Single user table (personal use application)
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -32,12 +31,11 @@ CREATE TABLE users (
 -- Financial institutions
 CREATE TABLE institutions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name VARCHAR(100) NOT NULL,
-    type VARCHAR(50), -- 'bank', 'brokerage', 'other'
-    color VARCHAR(7), -- Hex color for UI
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, name)
+    name VARCHAR(100) UNIQUE NOT NULL,
+    type VARCHAR(50), -- 'bank', 'brokerage', 'investment', 'other'
+    color VARCHAR(7), -- Hex color for UI consistency
+    display_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Accounts under institutions
@@ -45,15 +43,18 @@ CREATE TABLE accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     institution_id UUID NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
-    type VARCHAR(50) NOT NULL, -- 'cash', 'investment', 'brokerage_cash', 'brokerage_investment'
+    type VARCHAR(50) NOT NULL, -- 'checking', 'investment', 'brokerage_total', 'brokerage_cash', 'brokerage_investment'
     currency VARCHAR(3) NOT NULL, -- 'EUR', 'GBP', 'SEK'
     is_derived BOOLEAN DEFAULT FALSE, -- For calculated brokerage investment accounts
-    parent_account_id UUID REFERENCES accounts(id), -- Link for derived accounts
+    parent_account_id UUID REFERENCES accounts(id), -- Link for brokerage account relationships
+    display_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(institution_id, name)
 );
 
--- Daily snapshots of account values
+-- Daily snapshots of account values (one per day max)
 CREATE TABLE account_snapshots (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -62,21 +63,23 @@ CREATE TABLE account_snapshots (
     currency VARCHAR(3) NOT NULL,
     value_eur DECIMAL(15, 2) NOT NULL, -- EUR normalized value
     exchange_rate DECIMAL(10, 6),
+    notes TEXT, -- Optional context for the update
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(account_id, date) -- Only one snapshot per account per day
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(account_id, date) -- Enforce one snapshot per account per day
 );
 
--- Brokerage account entries (for split handling)
+-- Brokerage account special handling
 CREATE TABLE brokerage_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    brokerage_account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     date DATE NOT NULL,
     total_value DECIMAL(15, 2) NOT NULL,
     cash_value DECIMAL(15, 2) NOT NULL,
     investment_value DECIMAL(15, 2) GENERATED ALWAYS AS (total_value - cash_value) STORED,
     currency VARCHAR(3) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(account_id, date)
+    UNIQUE(brokerage_account_id, date)
 );
 
 -- Exchange rates cache
@@ -86,7 +89,7 @@ CREATE TABLE exchange_rates (
     from_currency VARCHAR(3) NOT NULL,
     to_currency VARCHAR(3) NOT NULL,
     rate DECIMAL(10, 6) NOT NULL,
-    source VARCHAR(50), -- API source
+    source VARCHAR(50) DEFAULT 'exchangerate-api',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(date, from_currency, to_currency)
 );
@@ -94,12 +97,13 @@ CREATE TABLE exchange_rates (
 -- Future: Assets table (Phase 2)
 CREATE TABLE assets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
-    type VARCHAR(50) NOT NULL, -- 'vehicle', 'property', 'crypto', 'other'
+    type VARCHAR(50) NOT NULL, -- 'vehicle', 'crypto', 'property', 'other'
     currency VARCHAR(3) NOT NULL,
     purchase_price DECIMAL(15, 2),
     purchase_date DATE,
+    notes TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -117,231 +121,252 @@ CREATE TABLE asset_snapshots (
 );
 ```
 
-### Database Indexes
+### Database Indexes for Performance
 ```sql
--- Performance indexes
+-- Critical indexes for query performance
 CREATE INDEX idx_account_snapshots_date ON account_snapshots(date DESC);
 CREATE INDEX idx_account_snapshots_account_date ON account_snapshots(account_id, date DESC);
-CREATE INDEX idx_exchange_rates_lookup ON exchange_rates(date, from_currency, to_currency);
-CREATE INDEX idx_institutions_user ON institutions(user_id);
+CREATE INDEX idx_brokerage_entries_date ON brokerage_entries(date DESC);
+CREATE INDEX idx_exchange_rates_lookup ON exchange_rates(date DESC, from_currency, to_currency);
 CREATE INDEX idx_accounts_institution ON accounts(institution_id);
+CREATE INDEX idx_accounts_active ON accounts(is_active) WHERE is_active = TRUE;
 ```
 
 ## API Design
 
 ### Authentication Endpoints
 ```typescript
-POST   /api/auth/register   - User registration
-POST   /api/auth/login      - User login
+POST   /api/auth/login      - User login (username/password)
 POST   /api/auth/logout     - User logout
-GET    /api/auth/session    - Get current session
+GET    /api/auth/session    - Validate current session
+POST   /api/auth/change-password - Change password (authenticated)
 ```
 
-### Institution Endpoints
+### Data Management Endpoints
 ```typescript
-GET    /api/institutions          - List all user institutions
+// Institutions
+GET    /api/institutions          - List all institutions
 POST   /api/institutions          - Create new institution
 PUT    /api/institutions/:id      - Update institution
-DELETE /api/institutions/:id      - Delete institution
-```
+DELETE /api/institutions/:id      - Delete institution (cascades to accounts)
 
-### Account Endpoints
-```typescript
+// Accounts
 GET    /api/accounts              - List all accounts with latest values
-GET    /api/accounts/:id          - Get specific account details
+GET    /api/accounts/:id          - Get account details with history
 POST   /api/accounts              - Create new account
-PUT    /api/accounts/:id          - Update account details
+PUT    /api/accounts/:id          - Update account metadata
 DELETE /api/accounts/:id          - Delete account
-POST   /api/accounts/:id/snapshot - Create/update today's snapshot
-```
+POST   /api/accounts/:id/snapshot - Update account value (creates daily snapshot)
 
-### Data Endpoints
-```typescript
-GET    /api/portfolio/summary     - Get portfolio summary
-GET    /api/portfolio/history     - Get historical data with filters
-GET    /api/portfolio/chart       - Get chart-ready data
-POST   /api/brokerage/entry       - Create brokerage entry with auto-split
-```
+// Brokerage Special Handling
+POST   /api/brokerage/update      - Update brokerage with total + cash (auto-splits)
 
-### Exchange Rate Endpoints
-```typescript
-GET    /api/exchange-rates/latest - Get latest rates
-GET    /api/exchange-rates/historical/:date - Get historical rates
-POST   /api/exchange-rates/sync   - Force sync from external API
-```
+// Portfolio Analytics
+GET    /api/portfolio/summary     - Current net worth and breakdown
+GET    /api/portfolio/history     - Historical data for charting
+GET    /api/portfolio/currencies  - Per-currency breakdown
 
-### Export Endpoints
-```typescript
+// Exchange Rates
+GET    /api/exchange/rates        - Get current rates for EUR, GBP, SEK
+POST   /api/exchange/sync         - Force sync from external API
+
+// Data Export
 GET    /api/export/csv            - Export all data as CSV
-GET    /api/export/pdf            - Generate PDF report
 ```
 
 ## Security Implementation
 
 ### Authentication & Authorization
+- **Single User System**: One admin user for personal use
 - **Password Security**: bcrypt with salt rounds = 12
-- **Session Management**: JWT tokens with HttpOnly cookies
-- **Token Expiry**: 7 days with refresh mechanism
-- **CSRF Protection**: Built into NextAuth
+- **Session Management**: 
+  - JWT tokens with HttpOnly cookies
+  - 7-day expiry with automatic refresh
+  - Secure flag in production
+- **No OAuth Initially**: Keep it simple for personal use
 
-### API Security
+### Environment Variables (NEVER commit to repo!)
+```env
+# Database
+DATABASE_URL="postgresql://user:password@host/db?sslmode=require"
+
+# Authentication
+NEXTAUTH_URL="https://your-domain.vercel.app"
+NEXTAUTH_SECRET="[generate-with-openssl-rand-base64-32]"
+ADMIN_USERNAME="your-username"
+ADMIN_PASSWORD_HASH="[bcrypt-hash-never-plain-text]"
+
+# Exchange Rate API (Free tier)
+EXCHANGE_RATE_API_URL="https://api.exchangerate-api.com/v4/latest/EUR"
+
+# Environment
+NODE_ENV="production"
+```
+
+### Security Best Practices
+- **Input Validation**: Zod schemas for all API inputs
+- **SQL Injection Prevention**: Prisma ORM parameterized queries
+- **XSS Protection**: React's automatic escaping
+- **CSRF Protection**: Built into NextAuth
+- **Rate Limiting**: Vercel Edge functions rate limiting
+- **Secrets Management**: 
+  - All secrets in environment variables
+  - CI/CD checks for exposed secrets (Gitleaks)
+  - Regular secret rotation
+
+### API Security Middleware
 ```typescript
-// Middleware for protected routes
+// Every API route must be protected
 export function withAuth(handler: NextApiHandler) {
   return async (req: NextApiRequest, res: NextApiResponse) => {
     const session = await getServerSession(req, res, authOptions);
-    if (!session) {
+    if (!session || session.user?.username !== process.env.ADMIN_USERNAME) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     return handler(req, res);
   };
 }
 
-// Input validation using Zod
+// Input validation example
 const accountUpdateSchema = z.object({
-  name: z.string().min(1).max(100),
-  type: z.enum(['cash', 'investment']),
-  currency: z.enum(['EUR', 'GBP', 'SEK'])
+  value: z.number().min(0).max(999999999),
+  currency: z.enum(['EUR', 'GBP', 'SEK']),
+  date: z.string().datetime().optional(),
+  notes: z.string().max(500).optional()
 });
 ```
 
-### Environment Variables
-```env
-# Database
-DATABASE_URL="postgresql://..."
+## External Integrations
 
-# Authentication
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="generated-secret-key"
+### Exchange Rate API (Free Tier)
+- **Provider**: ExchangeRate-API.com
+- **Endpoint**: `https://api.exchangerate-api.com/v4/latest/EUR`
+- **Update Frequency**: Daily automatic sync
+- **Caching**: 24-hour cache to minimize API calls
+- **Supported**: EUR, GBP, SEK
+- **Fallback**: Use last known rates if API fails
 
-# Exchange Rate API
-EXCHANGE_RATE_API_KEY="your-api-key"
-EXCHANGE_RATE_API_URL="https://api.exchangerate-api.com/v4"
-
-# Environment
-NODE_ENV="development|production"
+### Implementation
+```typescript
+async function syncExchangeRates() {
+  const response = await fetch(EXCHANGE_RATE_API_URL);
+  const data = await response.json();
+  
+  // Store rates for EUR base
+  await prisma.exchangeRate.upsert({
+    where: { date_from_to: { date, from: 'EUR', to: 'GBP' }},
+    create: { date, from: 'EUR', to: 'GBP', rate: data.rates.GBP },
+    update: { rate: data.rates.GBP }
+  });
+  // Similar for SEK...
+}
 ```
-
-### Data Protection
-- All database connections over SSL
-- Input sanitization on all endpoints
-- Rate limiting on API routes
-- SQL injection prevention via Prisma ORM
-- XSS protection via React's default escaping
 
 ## Performance Optimization
 
 ### Caching Strategy
-- Exchange rates cached for 24 hours
-- Portfolio calculations cached with SWR
-- Static pages with ISR (Incremental Static Regeneration)
-- Database query optimization with proper indexes
+- Exchange rates: 24-hour cache
+- Portfolio calculations: 5-minute SWR cache
+- Static pages: ISR with 1-hour revalidation
+- Database queries: Optimized with proper indexes
 
 ### Frontend Optimization
 - Code splitting with dynamic imports
-- Image optimization with Next.js Image
 - Lazy loading for charts
-- Virtual scrolling for large data tables
-- Debounced API calls for real-time updates
+- Debounced form inputs
+- Optimistic UI updates with SWR
 
 ### Database Optimization
-- Efficient indexes on frequently queried columns
-- Materialized views for complex calculations
+- Efficient indexes on date and foreign keys
+- Daily snapshot constraint (one per account per day)
+- Minimal data model for fast queries
 - Connection pooling via Prisma
-- Query result pagination
 
-## External Integrations
+## Development Setup
 
-### Exchange Rate API
-- **Provider**: ExchangeRate-API (free tier)
-- **Endpoint**: `https://api.exchangerate-api.com/v4/latest/EUR`
-- **Rate Limit**: 1500 requests/month (free tier)
-- **Caching**: 24-hour cache to minimize API calls
-- **Fallback**: Store last known rates for offline capability
+### Prerequisites
+```bash
+# Required
+Node.js 20+ LTS
+npm 10+
+Git
 
-## Error Handling
-
-### API Error Responses
-```typescript
-interface ErrorResponse {
-  error: string;
-  message: string;
-  statusCode: number;
-  timestamp: string;
-  path?: string;
-}
+# Accounts needed
+- GitHub account
+- Vercel account (free tier)
+- Neon database account (free tier)
 ```
 
-### Client-Side Error Handling
-- Toast notifications for user actions
-- Graceful fallbacks for failed data loads
-- Offline mode detection
-- Retry logic with exponential backoff
-
-## Monitoring & Logging
-
-### Application Monitoring
-- Vercel Analytics for performance metrics
-- Custom error tracking
-- API response time monitoring
-- Database query performance tracking
-
-### Audit Logging
-- User authentication events
-- Data modifications (create, update, delete)
-- Export operations
-- Failed login attempts
-
-## Development Configuration
-
-### Local Development Setup
+### Local Development
 ```bash
-# Required software
-- Node.js 20+
-- PostgreSQL 15+ or Neon account
-- Git
+# Clone repository
+git clone https://github.com/Fern-Labs-Open-Source/finflow-tracker.git
+cd finflow-tracker
 
-# Environment setup
-cp .env.example .env.local
+# Install dependencies
 npm install
-npx prisma migrate dev
+
+# Setup environment
+cp .env.example .env.local
+# Edit .env.local with your values
+
+# Setup database
+npx prisma generate
+npx prisma db push
+
+# Create admin user (run once)
+npm run setup:admin
+
+# Start development
 npm run dev
 ```
 
-### Testing Strategy
-- Unit tests for utility functions
+### Testing Requirements
+- Unit tests for calculations and utilities
 - Integration tests for API endpoints
-- E2E tests for critical user flows
-- Snapshot testing for UI components
+- E2E test for critical user flow (login → update → view chart)
+- Security scanning in CI
 
-## Deployment Configuration
+## Deployment
 
-### Production Deployment (Vercel)
+### Vercel Deployment
 ```json
 {
   "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "outputDirectory": ".next",
+  "buildCommand": "prisma generate && npm run build",
   "env": {
-    "DATABASE_URL": "@database_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "EXCHANGE_RATE_API_KEY": "@exchange_rate_api_key"
+    "DATABASE_URL": "@neon-database-url",
+    "NEXTAUTH_SECRET": "@nextauth-secret",
+    "ADMIN_USERNAME": "@admin-username",
+    "ADMIN_PASSWORD_HASH": "@admin-password-hash"
   }
 }
 ```
 
-### Database Migrations
-- Automated via GitHub Actions on main branch
-- Rollback strategy with versioned migrations
-- Backup before major migrations
+### Production Checklist
+- [ ] Environment variables set in Vercel
+- [ ] Database migrations applied
+- [ ] Admin credentials created securely
+- [ ] HTTPS enforced
+- [ ] Security headers configured
+- [ ] Monitoring enabled
+- [ ] Backup strategy in place
 
-## Scalability Considerations
+## Monitoring & Maintenance
 
-### Future Growth
-- Database sharding strategy for multi-tenant use
-- Redis cache layer for session management
-- CDN for static assets
-- Horizontal scaling with load balancing
-- Microservices architecture for complex calculations
+### Application Monitoring
+- Vercel Analytics for performance
+- Error tracking with console logs
+- Database query performance via Prisma logs
+- Uptime monitoring (optional for personal use)
+
+### Backup Strategy
+- Daily CSV export (manual or automated)
+- Database backups via Neon
+- Git repository for code versioning
+
+### Maintenance Tasks
+- Monthly: Check for dependency updates
+- Weekly: Review error logs
+- Daily: Automated exchange rate sync
+- As needed: Security patches
