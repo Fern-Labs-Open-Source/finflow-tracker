@@ -95,4 +95,8 @@ credentials/
 exports/
 *.csv
 *.xlsx
+<<<<<<< HEAD
 backup/
+=======
+backup/
+>>>>>>> 93dcd9fe8cac2ed19b15a1334902647cdb16479d
