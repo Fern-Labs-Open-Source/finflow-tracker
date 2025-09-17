@@ -142,7 +142,8 @@ const AccountCard = memo(({
               <span className="text-sm text-gray-600">Current Balance</span>
               <EditableBalance
                 accountId={account.id}
-                initialBalance={account.currentBalance}
+                accountName={account.name}
+                value={account.currentBalance}
                 currency={account.currency}
                 onUpdate={onUpdateBalance}
                 className="text-xl font-bold tabular-nums"
@@ -190,7 +191,7 @@ AccountCard.displayName = 'AccountCard'
 export default function OptimizedAccounts() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const { accounts, isLoading, mutate: refreshAccounts } = useAccounts()
+  const { accounts, isLoading, refresh: refreshAccounts } = useAccounts()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'name' | 'balance' | 'type'>('balance')
