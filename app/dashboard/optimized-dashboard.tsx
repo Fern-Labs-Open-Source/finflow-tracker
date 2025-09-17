@@ -39,8 +39,8 @@ import { useRenderTime, useLazyLoad, useDebouncedCallback, useMemoryMonitor } fr
 import dynamic from 'next/dynamic'
 
 // Lazy load heavy components
-const DistributionCard = lazy(() => import('@/components/dashboard/distribution-card'))
-const PortfolioChart = lazy(() => import('@/components/charts/portfolio-chart'))
+const DistributionCard = lazy(() => import('../../src/components/dashboard/distribution-card'))
+const PortfolioChart = lazy(() => import('../../src/components/charts/portfolio-chart'))
 
 // Memoized components
 const QuickStatCard = memo(({ 
