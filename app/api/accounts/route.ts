@@ -25,7 +25,7 @@ export const GET = withAuth(async (req: NextRequest) => {
 
     // If pagination is requested
     if (usePagination) {
-      const { page, limit } = parsePaginationParams(searchParams, 20, 100);
+      const { page = 1, limit = 20 } = parsePaginationParams(searchParams, 20, 100);
       const offset = calculateOffset(page, limit);
       
       // Get total count for pagination

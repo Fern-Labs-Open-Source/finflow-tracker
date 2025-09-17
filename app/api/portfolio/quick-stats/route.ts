@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
 import { prisma } from '../../../../src/lib/db/prisma';
 import { CacheHeaders } from '../../../../src/lib/api/cache-headers';
+import { Decimal } from '@prisma/client/runtime/library';
 
 // GET /api/portfolio/quick-stats - Get quick portfolio statistics
 export const GET = withAuth(async (req: NextRequest) => {
@@ -42,7 +43,7 @@ export const GET = withAuth(async (req: NextRequest) => {
     });
 
     const rateMap = new Map(exchangeRates.map(r => [r.fromCurrency, r.rate]));
-    rateMap.set('EUR', 1); // EUR to EUR is always 1
+    rateMap.set('EUR', new Decimal(1)); // EUR to EUR is always 1
 
     // Calculate quick stats
     let totalValueEUR = 0;
@@ -61,8 +62,8 @@ export const GET = withAuth(async (req: NextRequest) => {
       byCurrency[account.currency] = (byCurrency[account.currency] || 0) + balance;
       
       // Convert to EUR for totals
-      const rate = rateMap.get(account.currency) || 1;
-      const valueInEUR = balance * rate;
+      const rate = rateMap.get(account.currency) || new Decimal(1);
+      const valueInEUR = balance * Number(rate);
       totalValueEUR += valueInEUR;
       
       // Track by type (in EUR)
@@ -92,8 +93,8 @@ export const GET = withAuth(async (req: NextRequest) => {
 
     let yesterdayTotalEUR = 0;
     for (const snapshot of yesterdaySnapshots) {
-      const rate = rateMap.get(snapshot.currency) || 1;
-      yesterdayTotalEUR += Number(snapshot.valueOriginal) * rate;
+      const rate = rateMap.get(snapshot.currency) || new Decimal(1);
+      yesterdayTotalEUR += Number(snapshot.valueOriginal) * Number(rate);
     }
 
     const dailyChange = totalValueEUR - yesterdayTotalEUR;
