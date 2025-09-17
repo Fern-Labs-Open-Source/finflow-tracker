@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth/get-server-session';
+import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
 import { prisma } from '@/lib/db/prisma';
 
 // GET /api/export/csv - Export data as CSV

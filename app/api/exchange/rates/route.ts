@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth/get-server-session';
+import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
 import { ExchangeRateService } from '@/lib/services/exchange-rate.service';
 import { exchangeRateQuerySchema } from '@/lib/validation/schemas';
 import { z } from 'zod';

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth/get-server-session';
+import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
 import { PortfolioService } from '@/lib/services/portfolio.service';
 
 // GET /api/portfolio/history - Get historical portfolio data

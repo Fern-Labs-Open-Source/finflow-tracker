@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import { withAuth } from '@/lib/auth/get-server-session';
+import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
 import { createAccountSnapshotSchema } from '@/lib/validation/schemas';
 import { ExchangeRateService } from '@/lib/services/exchange-rate.service';
 import { z } from 'zod';

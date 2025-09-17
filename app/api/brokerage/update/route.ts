@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth/get-server-session';
+import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
 import { createBrokerageEntrySchema } from '@/lib/validation/schemas';
 import { BrokerageService } from '@/lib/services/brokerage.service';
 import { z } from 'zod';
