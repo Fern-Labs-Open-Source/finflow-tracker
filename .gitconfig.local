@@ -1,0 +1,44 @@
+# FinFlow Tracker - Local Git Configuration
+# This file contains Git configuration specific to this repository
+
+[core]
+    # Use SSH for authentication (when SSH key is added to GitHub)
+    # Uncomment the line below once SSH key is configured:
+    # sshCommand = ssh -i ~/.ssh/id_ed25519
+
+[url "git@github.com:"]
+    # When SSH is properly configured, use SSH instead of HTTPS
+    # Uncomment to enable:
+    # insteadOf = https://github.com/
+
+[alias]
+    # Useful aliases for common operations
+    co = checkout
+    br = branch
+    st = status
+    cm = commit -m
+    
+    # Switch to SSH authentication
+    use-ssh = !git remote set-url origin git@github.com:Fern-Labs-Open-Source/finflow-tracker.git && echo "Switched to SSH authentication"
+    
+    # Switch to token authentication (requires token as argument)
+    use-token = "!f() { git remote set-url origin https://x-access-token:$1@github.com/Fern-Labs-Open-Source/finflow-tracker.git && echo 'Switched to token authentication'; }; f"
+    
+    # Show current remote URL
+    show-remote = remote -v
+    
+    # Create and checkout a new feature branch
+    feature = checkout -b
+    
+    # Pull with rebase to keep history clean
+    up = pull --rebase
+    
+    # Push the current branch
+    push-current = push origin HEAD
+    
+    # Show pretty log
+    lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+
+# To use this configuration:
+# 1. Run: git config --local include.path .gitconfig.local
+# 2. The aliases will be available in this repository only
