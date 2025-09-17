@@ -2,6 +2,12 @@
 
 A personal net worth tracking application with multi-currency support and historical visualization.
 
+## 🚀 Quick Deploy to Vercel
+
+Deploy your own instance of FinFlow Tracker with one click:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FFern-Labs-Open-Source%2Ffinflow-tracker&env=DATABASE_URL,NEXTAUTH_SECRET,NEXTAUTH_URL,BYPASS_AUTH&envDescription=Required%20environment%20variables%20for%20FinFlow%20Tracker&envLink=https%3A%2F%2Fgithub.com%2FFern-Labs-Open-Source%2Ffinflow-tracker%2Fblob%2Fmain%2FDEPLOYMENT.md&project-name=finflow-tracker&repository-name=finflow-tracker)
+
 ## 🎯 Purpose
 
 FinFlow Tracker helps you monitor your net worth across multiple accounts, institutions, and currencies. It's designed for simple weekly/monthly updates of account balances, providing powerful visualizations of your financial trends over time.
