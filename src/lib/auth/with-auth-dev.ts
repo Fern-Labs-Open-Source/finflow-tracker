@@ -14,6 +14,11 @@ export function withAuthDev(
       if (testBypass === 'test-mode') {
         // Bypass authentication for testing
         console.log('🔓 Auth bypassed for testing:', req.nextUrl.pathname);
+        // Add a test user auth object
+        (req as any).auth = {
+          userId: 'test-user-id',
+          email: 'test@example.com',
+        };
         return handler(req, context);
       }
       

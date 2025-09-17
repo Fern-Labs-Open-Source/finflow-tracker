@@ -1,651 +1,399 @@
-# Development Specification - FinFlow Tracker
+# FinFlow Tracker - Development Specification
 
-## Repository Structure
+## Development Philosophy
 
-```
-finflow-tracker/
-├── .github/
-│   ├── workflows/
-│   │   ├── ci.yml                 # Main CI pipeline
-│   │   ├── security.yml           # Security scanning (CRITICAL)
-│   │   └── deploy.yml             # Production deployment
-│   └── pull_request_template.md
-├── src/
-│   ├── app/                      # Next.js App Router
-│   │   ├── api/                  # API routes (ALL MUST BE PROTECTED)
-│   │   │   ├── auth/
-│   │   │   ├── accounts/
-│   │   │   ├── institutions/
-│   │   │   ├── brokerage/
-│   │   │   ├── portfolio/
-│   │   │   ├── exchange/
-│   │   │   └── export/
-│   │   ├── (auth)/               # Auth-protected pages
-│   │   │   ├── dashboard/
-│   │   │   ├── accounts/
-│   │   │   └── analytics/
-│   │   ├── login/
-│   │   └── layout.tsx
-│   ├── components/               # React components
-│   │   ├── ui/                  # Base UI components (shadcn/ui)
-│   │   ├── charts/              # Chart components (Recharts)
-│   │   ├── forms/               # Form components
-│   │   └── layout/              # Layout components
-│   ├── lib/                     # Utilities and libraries
-│   │   ├── auth.ts              # Authentication helpers
-│   │   ├── db.ts                # Database client (Prisma)
-│   │   ├── exchange-rates.ts    # Exchange rate utilities
-│   │   ├── validators.ts        # Zod input validators
-│   │   └── security.ts          # Security utilities
-│   ├── hooks/                   # Custom React hooks
-│   ├── types/                   # TypeScript type definitions
-│   └── styles/                  # Global styles (Tailwind)
-├── prisma/
-│   ├── schema.prisma            # Database schema
-│   └── migrations/              # Database migrations
-├── public/                      # Static assets (minimal)
-├── tests/
-│   ├── unit/                   # Unit tests
-│   ├── integration/             # Integration tests
-│   └── e2e/                     # End-to-end tests
-├── scripts/
-│   ├── setup-dev.sh             # Development setup script
-│   ├── setup-admin.js           # Create admin user securely
-│   └── check-env.js             # Environment validation
-├── docs/
-│   ├── PRODUCT_SPEC.md
-│   ├── TECHNICAL_SPEC.md
-│   ├── DEVELOPMENT_SPEC.md
-│   └── CONTRIBUTING.md          # Contributing guidelines
-├── .env.example                 # Environment template (NO SECRETS!)
-├── .gitignore
-├── .gitleaksignore             # Gitleaks configuration
-├── .eslintrc.json              # ESLint configuration
-├── .prettierrc                 # Prettier configuration
-├── next.config.js              # Next.js configuration
-├── tsconfig.json               # TypeScript configuration
-├── package.json
-└── README.md
-```
-
-## Development Workflow
-
-### 1. Branch Strategy
-
-```mermaid
-gitGraph
-    commit id: "main"
-    branch feature/add-account-type
-    checkout feature/add-account-type
-    commit id: "Add account model"
-    commit id: "Add UI component"
-    commit id: "Add tests"
-    checkout main
-    merge feature/add-account-type
-    branch fix/calculation-error
-    checkout fix/calculation-error
-    commit id: "Fix calculation"
-    checkout main
-    merge fix/calculation-error
-```
-
-**Branch Naming Convention:**
-- `feature/` - New features
-- `fix/` - Bug fixes
-- `docs/` - Documentation updates
-- `refactor/` - Code refactoring
-- `test/` - Test additions/updates
-- `ci/` - CI/CD updates
-
-### 2. Commit Convention
-
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
-
-**Types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, semicolons, etc.)
-- `refactor`: Code refactoring
-- `perf`: Performance improvements
-- `test`: Test additions or corrections
-- `build`: Build system changes
-- `ci`: CI/CD changes
-- `chore`: Other changes
-
-**Examples:**
-```bash
-feat(accounts): add support for crypto wallets
-fix(charts): correct EUR conversion in historical data
-docs(api): update authentication endpoints documentation
-```
-
-### 3. Pull Request Process
-
-#### PR Template
-```markdown
-## Description
-Brief description of changes
-
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-- [ ] Unit tests pass
-- [ ] Integration tests pass
-- [ ] Manual testing completed
-
-## Checklist
-- [ ] Code follows style guidelines
-- [ ] Self-review completed
-- [ ] Comments added for complex code
-- [ ] Documentation updated
-- [ ] No new warnings
-- [ ] No secrets in code
-```
-
-#### Review Process
-1. Create feature branch
-2. Make changes with tests
-3. Run local checks: `npm run pre-commit`
-4. Create PR with description
-5. Wait for CI checks
-6. Address review comments
-7. Merge after approval
-
-## CI/CD Pipeline
-
-### GitHub Actions Workflows
-
-#### 1. Main CI Pipeline (`.github/workflows/ci.yml`)
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  # Security check FIRST - fail fast if secrets detected
-  security-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Check for secrets
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-  lint:
-    needs: security-check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run type-check
-
-  test:
-    needs: security-check
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: npx prisma migrate deploy
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
-      - run: npm test
-      - run: npm run test:integration
-
-  build:
-    needs: [lint, test]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run build
-```
-
-#### 2. Security Scanning (`.github/workflows/security.yml`)
-```yaml
-name: Security Audit
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    - cron: '0 0 * * 1'  # Weekly on Monday
-
-jobs:
-  # CRITICAL: Detect exposed secrets
-  secret-scanning:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Full history for better detection
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Check .env.example
-        run: |
-          if grep -E "(password|secret|key|token)=" .env.example; then
-            echo "ERROR: .env.example contains sensitive-looking values!"
-            exit 1
-          fi
-
-  dependency-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-      - run: npm audit --audit-level=moderate
-      - name: Check for known vulnerabilities
-        run: npm audit --json | jq '.vulnerabilities | length' | xargs -I {} test {} -eq 0
-
-  code-quality:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Check for hardcoded secrets
-        run: |
-          # Check for common secret patterns
-          ! grep -r "ADMIN_PASSWORD\|DATABASE_URL\|NEXTAUTH_SECRET" --include="*.ts" --include="*.tsx" --include="*.js" src/
-```
-
-#### 3. Deployment (`.github/workflows/deploy.yml`)
-```yaml
-name: Deploy
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v3
-      - uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-```
+### Core Principles
+1. **Simplicity First**: Keep the codebase simple and interpretable
+2. **User Experience**: Fast, smooth, and ergonomic interfaces
+3. **Maintainability**: Easy for new developers to understand and contribute
+4. **Performance**: Optimize for speed and responsiveness
+5. **Iterative Development**: Build incrementally, test frequently
 
 ## Development Environment Setup
 
 ### Prerequisites
+- Node.js 18+ 
+- PostgreSQL (or Neon cloud database)
+- Git
+
+### Initial Setup
 ```bash
-# Required software
-Node.js 20+ (LTS)
-npm 10+
-Git 2.30+
-PostgreSQL 15+ (or Neon account)
-VS Code (recommended)
-```
-
-### Initial Setup Script
-```bash
-#!/bin/bash
-# scripts/setup-dev.sh
-
-echo "🚀 Setting up FinFlow Tracker development environment..."
-
-# Check Node version
-NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-if [ "$NODE_VERSION" -lt 20 ]; then
-    echo "❌ Node.js 20+ required"
-    exit 1
-fi
+# Clone repository
+git clone https://github.com/your-org/finflow-tracker.git
+cd finflow-tracker
 
 # Install dependencies
-echo "📦 Installing dependencies..."
 npm install
 
-# Setup environment
-echo "🔧 Setting up environment..."
-if [ ! -f .env.local ]; then
-    cp .env.example .env.local
-    echo "⚠️  Please update .env.local with your configuration"
-fi
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your database credentials
 
-# Setup database
-echo "🗄️ Setting up database..."
-npx prisma generate
+# Run database migrations
 npx prisma migrate dev
 
-# Run initial checks
-echo "✅ Running initial checks..."
-npm run lint
-npm run type-check
-npm run test
+# Seed demo data (optional)
+npx tsx scripts/seed-demo-data.ts
 
-echo "✨ Setup complete! Run 'npm run dev' to start developing"
+# Start development server
+npm run dev
 ```
 
-### VS Code Configuration
+### Environment Variables
+```env
+# Required
+DATABASE_URL=postgresql://user:password@host/database
+NEXTAUTH_SECRET=your-secret-key
 
-#### `.vscode/settings.json`
-```json
-{
-  "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
-  },
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "files.exclude": {
-    "**/.git": true,
-    "**/.DS_Store": true,
-    "**/node_modules": true,
-    "**/.next": true
+# Development
+BYPASS_AUTH=true  # Skip auth in development
+NODE_ENV=development
+
+# Optional
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+## Architecture Decisions
+
+### Technology Choices
+
+#### Frontend
+- **Next.js 15+**: Latest features, app directory, server components
+- **React 19**: Newest React features and optimizations
+- **TypeScript**: Type safety and better developer experience
+- **Tailwind CSS**: Utility-first styling with consistent design
+- **Framer Motion**: Smooth, performant animations
+- **SWR**: Smart data fetching with caching
+
+#### Backend
+- **Next.js API Routes**: Simplified backend within the same codebase
+- **Prisma ORM**: Type-safe database access
+- **PostgreSQL**: Reliable, feature-rich database
+- **NextAuth.js**: Flexible authentication solution
+
+### Design Patterns
+
+#### Data Fetching
+- Use SWR for client-side data fetching
+- Implement proper caching strategies
+- Always provide loading and error states
+- Use optimistic updates for better UX
+
+```typescript
+// Example: Custom hook with SWR
+export function useAccounts() {
+  const { data, error, mutate } = useSWR('/api/accounts', fetcher, {
+    refreshInterval: 60000,
+    revalidateOnFocus: true,
+  })
+  
+  return {
+    accounts: data,
+    isLoading: !error && !data,
+    isError: error,
+    refresh: mutate
   }
 }
 ```
 
-#### `.vscode/extensions.json`
-```json
-{
-  "recommendations": [
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode",
-    "prisma.prisma",
-    "bradlc.vscode-tailwindcss",
-    "ms-vscode.vscode-typescript-next"
-  ]
+#### Component Structure
+- Separate presentation from logic
+- Use custom hooks for data and state
+- Keep components focused and single-purpose
+- Implement proper TypeScript interfaces
+
+```typescript
+// Example: Component with separated concerns
+interface AccountCardProps {
+  account: Account
+  onUpdate: (id: string, data: Partial<Account>) => Promise<void>
+  onDelete: (id: string) => Promise<void>
+}
+
+export function AccountCard({ account, onUpdate, onDelete }: AccountCardProps) {
+  // Component logic here
 }
 ```
 
-## Code Quality Standards
+#### API Design
+- RESTful endpoints with clear naming
+- Consistent error handling
+- Proper validation
+- Cache headers for performance
 
-### TypeScript Configuration
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
-    "paths": {
-      "@/*": ["./src/*"]
+```typescript
+// Example: API endpoint pattern
+export async function POST(request: Request) {
+  try {
+    // Validate input
+    const data = await request.json()
+    if (!isValid(data)) {
+      return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
     }
-  }
-}
-```
-
-### ESLint Rules
-```json
-{
-  "extends": [
-    "next/core-web-vitals",
-    "plugin:@typescript-eslint/recommended"
-  ],
-  "rules": {
-    "no-console": ["warn", { "allow": ["warn", "error"] }],
-    "@typescript-eslint/no-unused-vars": "error",
-    "@typescript-eslint/no-explicit-any": "error",
-    "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn"
-  }
-}
-```
-
-### Pre-commit Hooks
-
-#### `.husky/pre-commit`
-```bash
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
-# Run linting
-npm run lint
-
-# Run type checking
-npm run type-check
-
-# Check for secrets
-npx gitleaks detect --source . --verbose
-
-# Run tests for changed files
-npm run test:changed
-```
-
-## Testing Strategy
-
-### Unit Testing
-```typescript
-// Example: lib/exchange-rates.test.ts
-import { convertCurrency } from './exchange-rates';
-
-describe('convertCurrency', () => {
-  it('should convert EUR to GBP correctly', () => {
-    const result = convertCurrency(100, 'EUR', 'GBP', 0.86);
-    expect(result).toBe(86);
-  });
-});
-```
-
-### Integration Testing
-```typescript
-// Example: app/api/accounts/route.test.ts
-import { createMocks } from 'node-mocks-http';
-import handler from './route';
-
-describe('/api/accounts', () => {
-  it('should create new account', async () => {
-    const { req, res } = createMocks({
-      method: 'POST',
-      body: { name: 'Test Account', type: 'cash' }
-    });
     
-    await handler(req, res);
-    expect(res._getStatusCode()).toBe(201);
-  });
-});
+    // Process request
+    const result = await processData(data)
+    
+    // Return with cache headers
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 'max-age=60' }
+    })
+  } catch (error) {
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}
 ```
 
-### E2E Testing
-```typescript
-// Example: tests/e2e/login.spec.ts
-import { test, expect } from '@playwright/test';
+## Best Practices
 
-test('user can login', async ({ page }) => {
-  await page.goto('/login');
-  await page.fill('[name="username"]', 'testuser');
-  await page.fill('[name="password"]', 'password');
-  await page.click('button[type="submit"]');
-  await expect(page).toHaveURL('/dashboard');
-});
+### Code Quality
+
+#### TypeScript
+- Always define interfaces for data structures
+- Use proper types, avoid `any`
+- Leverage type inference where appropriate
+- Document complex types
+
+#### React Components
+- Use functional components with hooks
+- Implement proper error boundaries
+- Memoize expensive computations
+- Clean up effects properly
+
+#### State Management
+- Keep state as local as possible
+- Use SWR for server state
+- Implement optimistic updates
+- Handle loading and error states
+
+### Performance Optimization
+
+#### Frontend
+- Implement code splitting
+- Use dynamic imports for heavy components
+- Optimize images with Next.js Image
+- Implement virtual scrolling for long lists
+- Use React.memo for expensive components
+
+#### Backend
+- Add database indexes for frequently queried fields
+- Implement connection pooling
+- Use efficient queries (avoid N+1)
+- Cache responses appropriately
+
+#### General
+- Monitor bundle size
+- Use lighthouse for performance audits
+- Implement proper error tracking
+- Set up monitoring for production
+
+### Testing Strategy
+
+#### Unit Tests
+- Test utility functions
+- Test custom hooks
+- Test data transformations
+
+#### Integration Tests
+- Test API endpoints
+- Test database operations
+- Test authentication flows
+
+#### E2E Tests
+- Test critical user journeys
+- Test form submissions
+- Test data persistence
+
+### Security Considerations
+
+#### Authentication
+- Use environment-based auth configuration
+- Implement proper session management
+- Validate all inputs
+- Sanitize user-generated content
+
+#### API Security
+- Validate request origins
+- Implement rate limiting
+- Use prepared statements for database queries
+- Never expose sensitive data in responses
+
+#### Data Protection
+- Encrypt sensitive data at rest
+- Use HTTPS in production
+- Implement proper CORS policies
+- Regular security audits
+
+## Development Workflow
+
+### Git Workflow
+1. Create feature branch from `main`
+2. Make incremental commits
+3. Write descriptive commit messages
+4. Create pull request with description
+5. Code review and testing
+6. Merge to main after approval
+
+### Commit Message Format
+```
+type(scope): brief description
+
+- Detailed change 1
+- Detailed change 2
+
+Fixes #issue-number
 ```
 
-## Contributing Guidelines
-
-### For Human Contributors
-
-1. **Fork & Clone**: Fork the repository and clone locally
-2. **Branch**: Create a feature branch from `main`
-3. **Develop**: Make changes following code standards
-4. **Test**: Write/update tests for your changes
-5. **Document**: Update documentation if needed
-6. **Commit**: Use conventional commits
-7. **Push**: Push to your fork
-8. **PR**: Create a pull request with description
-
-### For AI Agents
-
-1. **Context**: Read all specification documents first
-2. **Branch**: Always work in feature branches
-3. **Small Changes**: Make focused, atomic commits
-4. **Test First**: Write tests before implementation
-5. **Document**: Add clear comments for complex logic
-6. **Validate**: Run all checks before pushing
-7. **Description**: Provide detailed PR descriptions
+Types: feat, fix, docs, style, refactor, test, chore
 
 ### Code Review Checklist
-
 - [ ] Code follows project style guide
-- [ ] All tests pass
-- [ ] No hardcoded secrets
-- [ ] Documentation updated
-- [ ] Performance impact considered
+- [ ] TypeScript types are properly defined
+- [ ] Error handling is implemented
+- [ ] Loading states are handled
+- [ ] Responsive design is maintained
+- [ ] Performance impact is considered
 - [ ] Security implications reviewed
-- [ ] Database migrations tested
-- [ ] Error handling implemented
-- [ ] Accessibility maintained
+- [ ] Documentation updated if needed
 
-## Security Practices (CRITICAL)
+## Common Patterns & Solutions
 
-### NEVER Commit (Will Fail CI)
-- API keys or tokens
-- Database credentials  
-- JWT secrets or NEXTAUTH_SECRET
-- Admin username/password (even hashed)
-- Personal financial data
-- `.env.local` or any `.env` files with values
-- Exchange rate API keys
-
-### Security Checklist for Every PR
-- [ ] No hardcoded credentials anywhere
-- [ ] All API routes use `withAuth` middleware
-- [ ] Input validation with Zod schemas
-- [ ] No console.log of sensitive data
-- [ ] Environment variables properly used
-- [ ] Dependencies audited (npm audit)
-- [ ] No SQL string concatenation
-
-### Required Security Measures
+### Inline Editing
 ```typescript
-// ALWAYS protect API routes
-export default withAuth(async function handler(req, res) {
-  // Your code here
-});
-
-// ALWAYS validate inputs
-const validated = accountUpdateSchema.parse(req.body);
-
-// ALWAYS use parameterized queries (Prisma does this)
-await prisma.account.update({
-  where: { id: accountId },
-  data: validated
-});
-
-// NEVER log sensitive data
-console.log('User logged in'); // OK
-console.log(`Password: ${password}`); // NEVER DO THIS
+// Pattern for inline editing with automatic save
+<EditableBalance
+  value={account.balance}
+  onUpdate={async (newValue) => {
+    await updateBalance(account.id, newValue)
+    // Automatically creates snapshot
+  }}
+/>
 ```
 
-## Performance Guidelines
-
-### Frontend
-- Lazy load components
-- Optimize images
-- Minimize bundle size
-- Use React.memo wisely
-- Implement virtual scrolling for large lists
-
-### Backend
-- Use database indexes
-- Implement caching
-- Paginate large datasets
-- Optimize queries
-- Use connection pooling
-
-### Monitoring
-- Track Core Web Vitals
-- Monitor API response times
-- Log error rates
-- Track database query performance
-- Monitor memory usage
-
-## Documentation Standards
-
-### Code Comments
+### Optimistic Updates
 ```typescript
-/**
- * Converts amount from one currency to another
- * @param amount - The amount to convert
- * @param from - Source currency code
- * @param to - Target currency code
- * @param rate - Exchange rate (optional, fetches if not provided)
- * @returns Converted amount in target currency
- */
-export async function convertCurrency(
-  amount: number,
-  from: Currency,
-  to: Currency,
-  rate?: number
-): Promise<number> {
-  // Implementation
+// Pattern for optimistic UI updates
+const updateAccount = async (id: string, data: any) => {
+  // Update UI immediately
+  mutate(optimisticData, false)
+  
+  try {
+    // Make actual request
+    const result = await api.update(id, data)
+    // Update with real data
+    mutate(result, false)
+  } catch (error) {
+    // Revert on error
+    mutate()
+  }
 }
 ```
 
-### API Documentation
-- Use OpenAPI/Swagger format
-- Include request/response examples
-- Document error responses
-- Specify rate limits
-- Note authentication requirements
+### Error Handling
+```typescript
+// Consistent error handling pattern
+try {
+  const result = await operation()
+  return { success: true, data: result }
+} catch (error) {
+  console.error('Operation failed:', error)
+  return { 
+    success: false, 
+    error: error.message || 'An error occurred' 
+  }
+}
+```
 
-## Deployment Checklist
+## Troubleshooting
 
-- [ ] All tests pass
-- [ ] Security scan complete
-- [ ] Environment variables set
-- [ ] Database migrations run
-- [ ] Performance testing done
-- [ ] Documentation updated
-- [ ] Monitoring configured
-- [ ] Backup strategy confirmed
-- [ ] Rollback plan ready
-- [ ] Stakeholders notified
+### Common Issues
+
+#### Database Connection
+- Check DATABASE_URL is correct
+- Ensure database is running
+- Verify network connectivity
+- Check connection pooling settings
+
+#### Authentication
+- Verify NEXTAUTH_SECRET is set
+- Check BYPASS_AUTH for development
+- Ensure session configuration is correct
+- Verify callback URLs
+
+#### Performance
+- Check for unnecessary re-renders
+- Verify SWR cache configuration
+- Look for N+1 queries
+- Check bundle size
+
+### Debug Tools
+- React Developer Tools
+- Next.js DevTools
+- Prisma Studio: `npx prisma studio`
+- Network tab for API debugging
+- Console for error messages
+
+## Lessons Learned
+
+### What Worked Well
+1. **SWR for data fetching**: Significantly improved performance
+2. **Inline editing**: Better UX than separate forms
+3. **Skeleton loading states**: Improved perceived performance
+4. **Framer Motion**: Smooth animations enhance UX
+5. **TypeScript**: Caught many bugs during development
+6. **Persistent navigation**: Better user experience
+
+### Challenges & Solutions
+1. **Challenge**: Complex state management
+   **Solution**: Keep state local, use SWR for server state
+
+2. **Challenge**: Performance with many accounts
+   **Solution**: Implement virtualization and pagination
+
+3. **Challenge**: Authentication in dev/prod
+   **Solution**: Environment-based configuration
+
+4. **Challenge**: Real-time updates
+   **Solution**: Optimistic updates with SWR
+
+## Future Considerations
+
+### Scalability
+- Implement pagination for large datasets
+- Add Redis for caching
+- Consider microservices for complex features
+- Implement job queues for background tasks
+
+### Maintenance
+- Set up automated testing
+- Implement error monitoring (Sentry)
+- Add performance monitoring
+- Create admin dashboard
+
+### Features
+- Real-time collaboration
+- Mobile application
+- Bank API integrations
+- Advanced analytics
+- Machine learning predictions
+
+## Resources
+
+### Documentation
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Prisma Documentation](https://www.prisma.io/docs)
+- [SWR Documentation](https://swr.vercel.app)
+- [Tailwind CSS](https://tailwindcss.com/docs)
+
+### Tools
+- [Prisma Studio](https://www.prisma.io/studio)
+- [React DevTools](https://react.dev/learn/react-developer-tools)
+- [Lighthouse](https://developers.google.com/web/tools/lighthouse)
+
+### Community
+- Project Issues on GitHub
+- Discord/Slack channels
+- Stack Overflow tags
+
+## Conclusion
+This development specification provides guidelines for maintaining and extending FinFlow Tracker. Follow these patterns and practices to ensure consistent, high-quality code that's easy to maintain and scale.
