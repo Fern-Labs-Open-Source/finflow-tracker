@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { ExchangeRateService } from '@/lib/services/exchange-rate.service';
-import { exchangeRateQuerySchema } from '@/lib/validation/schemas';
+import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { ExchangeRateService } from '../../../../src/lib/services/exchange-rate.service';
+import { exchangeRateQuerySchema } from '../../../../src/lib/validation/schemas';
 import { z } from 'zod';
 
 // GET /api/exchange/rates - Get exchange rates

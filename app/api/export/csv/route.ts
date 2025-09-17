@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { prisma } from '@/lib/db/prisma';
+import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { prisma } from '../../../../src/lib/db/prisma';
 
 // GET /api/export/csv - Export data as CSV
 export const GET = withAuth(async (req: NextRequest) => {

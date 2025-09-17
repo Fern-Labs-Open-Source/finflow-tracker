@@ -4,11 +4,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { prisma } from '@/lib/db/prisma';
+import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { prisma } from '../../../../src/lib/db/prisma';
 import { z } from 'zod';
-import { validateRequest } from '@/lib/validation/helpers';
-import { CacheHeaders } from '@/lib/api/cache-headers';
+import { validateRequest } from '../../../../src/lib/validation/helpers';
+import { CacheHeaders } from '../../../../src/lib/api/cache-headers';
 
 const batchUpdateSchema = z.object({
   updates: z.array(z.object({

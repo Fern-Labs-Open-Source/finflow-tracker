@@ -7,8 +7,8 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '../../src/components/ui/card'
 import { Button } from '../../src/components/ui/button'
 import { Input } from '../../src/components/ui/input'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { EditableBalance } from '@/components/accounts/editable-balance'
+import { formatCurrency, formatDate } from '../../src/lib/utils'
+import { EditableBalance } from '../../src/components/accounts/editable-balance'
 import { 
   PlusCircle,
   RefreshCw,
@@ -29,14 +29,14 @@ import {
   TrendingDown,
   AlertCircle
 } from 'lucide-react'
-import { useAccounts, useSearch } from '@/hooks/use-accounts'
+import { useAccounts, useSearch } from '../../src/hooks/use-accounts'
 import { AccountCardSkeleton } from '../../src/components/ui/skeleton'
 import { VirtualList } from '../../src/components/ui/virtual-list'
-import { AnimatedCard } from '@/components/animated/fade-in'
+import { AnimatedCard } from '../../src/components/animated/fade-in'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import clsx from 'clsx'
-import { dataFetcher } from '@/lib/data-fetcher'
-import { useRenderTime, useDebouncedCallback, usePrefetch } from '@/lib/performance'
+import { dataFetcher } from '../../src/lib/data-fetcher'
+import { useRenderTime, useDebouncedCallback, usePrefetch } from '../../src/lib/performance'
 
 // Account type configuration
 const accountTypeConfig = {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/prisma';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { createInstitutionSchema } from '@/lib/validation/schemas';
+import { prisma } from '../../../src/lib/db/prisma';
+import { withAuthDev as withAuth } from '../../../src/lib/auth/with-auth-dev';
+import { createInstitutionSchema } from '../../../src/lib/validation/schemas';
 import { z } from 'zod';
 
 // GET /api/institutions - Get all institutions

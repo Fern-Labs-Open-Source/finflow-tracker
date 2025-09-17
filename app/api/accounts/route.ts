@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/prisma';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { createAccountSchema } from '@/lib/validation/schemas';
-import { createValidationErrorResponse } from '@/lib/validation/error-formatter';
-import { CacheHeaders, addCacheHeaders } from '@/lib/api/cache-headers';
-import { parsePaginationParams, calculateOffset, createPaginatedResponse } from '@/lib/api/pagination';
+import { prisma } from '../../../src/lib/db/prisma';
+import { withAuthDev as withAuth } from '../../../src/lib/auth/with-auth-dev';
+import { createAccountSchema } from '../../../src/lib/validation/schemas';
+import { createValidationErrorResponse } from '../../../src/lib/validation/error-formatter';
+import { CacheHeaders, addCacheHeaders } from '../../../src/lib/api/cache-headers';
+import { parsePaginationParams, calculateOffset, createPaginatedResponse } from '../../../src/lib/api/pagination';
 import { z } from 'zod';
 
 // GET /api/accounts - Get all accounts with optional pagination

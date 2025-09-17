@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/prisma';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { updateInstitutionSchema } from '@/lib/validation/schemas';
-import { createValidationErrorResponse } from '@/lib/validation/error-formatter';
+import { prisma } from '../../../../src/lib/db/prisma';
+import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { updateInstitutionSchema } from '../../../../src/lib/validation/schemas';
+import { createValidationErrorResponse } from '../../../../src/lib/validation/error-formatter';
 import { z } from 'zod';
 
 interface RouteParams {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/prisma';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { updateAccountSchema } from '@/lib/validation/schemas';
+import { prisma } from '../../../../src/lib/db/prisma';
+import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { updateAccountSchema } from '../../../../src/lib/validation/schemas';
 import { z } from 'zod';
 
 interface RouteParams {

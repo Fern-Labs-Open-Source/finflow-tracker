@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/db/prisma'
-import { withAuth } from '@/lib/auth/api-auth'
+import prisma from '../../../../../src/lib/db/prisma'
+import { withAuth } from '../../../../../src/lib/auth/api-auth'
 
 export const POST = withAuth(async function handler(
   request: NextRequest,

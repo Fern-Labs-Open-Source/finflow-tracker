@@ -3,8 +3,8 @@ import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import '@/styles/performance.css';
-import { AuthProvider } from '@/providers/auth-provider';
-import { Navigation } from '@/components/layout/navigation';
+import { AuthProvider } from '../src/providers/auth-provider';
+import { Navigation } from '../src/components/layout/navigation';
 
 // Optimize font loading
 const inter = Inter({ 

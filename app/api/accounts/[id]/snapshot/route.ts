@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/prisma';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { createAccountSnapshotSchema } from '@/lib/validation/schemas';
-import { ExchangeRateService } from '@/lib/services/exchange-rate.service';
+import { prisma } from '../../../../../src/lib/db/prisma';
+import { withAuthDev as withAuth } from '../../../../../src/lib/auth/with-auth-dev';
+import { createAccountSnapshotSchema } from '../../../../../src/lib/validation/schemas';
+import { ExchangeRateService } from '../../../../../src/lib/services/exchange-rate.service';
 import { z } from 'zod';
 import { Decimal } from '@prisma/client/runtime/library';
 

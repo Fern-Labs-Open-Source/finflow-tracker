@@ -7,8 +7,8 @@ import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../src/components/ui/card'
 import { Button } from '../../src/components/ui/button'
 import { Input } from '../../src/components/ui/input'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { EditableBalance } from '@/components/accounts/editable-balance'
+import { formatCurrency, formatDate } from '../../src/lib/utils'
+import { EditableBalance } from '../../src/components/accounts/editable-balance'
 import { 
   PlusCircle,
   RefreshCw,
@@ -33,7 +33,7 @@ import {
   AlertCircle,
   Check
 } from 'lucide-react'
-import { useAccounts, useSearch } from '@/hooks/use-accounts'
+import { useAccounts, useSearch } from '../../src/hooks/use-accounts'
 import { AccountCardSkeleton } from '../../src/components/ui/skeleton'
 import { 
   FadeIn, 
@@ -42,7 +42,7 @@ import {
   AnimatedCard,
   SlideIn,
   AnimatedNumber
-} from '@/components/animated/fade-in'
+} from '../../src/components/animated/fade-in'
 import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
 import debounce from 'debounce'

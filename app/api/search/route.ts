@@ -4,9 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { prisma } from '@/lib/db/prisma';
-import { CacheHeaders } from '@/lib/api/cache-headers';
+import { withAuthDev as withAuth } from '../../../src/lib/auth/with-auth-dev';
+import { prisma } from '../../../src/lib/db/prisma';
+import { CacheHeaders } from '../../../src/lib/api/cache-headers';
 
 // GET /api/search - Search accounts and institutions
 export const GET = withAuth(async (req: NextRequest) => {

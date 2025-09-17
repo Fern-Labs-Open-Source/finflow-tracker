@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../src/components/ui/card'
 import { Button } from '../../src/components/ui/button'
-import { formatCurrency, formatPercentage, formatDate } from '@/lib/utils'
+import { formatCurrency, formatPercentage, formatDate } from '../../src/lib/utils'
 import { 
   ChevronLeft,
   TrendingUp,
@@ -22,7 +22,7 @@ import {
   Eye,
   Info
 } from 'lucide-react'
-import { usePortfolioHistory, usePortfolioSummary, usePortfolioQuickStats } from '@/hooks/use-portfolio'
+import { usePortfolioHistory, usePortfolioSummary, usePortfolioQuickStats } from '../../src/hooks/use-portfolio'
 import { ChartSkeleton } from '../../src/components/ui/skeleton'
 import { 
   FadeIn, 
@@ -31,7 +31,7 @@ import {
   AnimatedCard,
   SlideIn,
   AnimatedNumber
-} from '@/components/animated/fade-in'
+} from '../../src/components/animated/fade-in'
 import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
 import {

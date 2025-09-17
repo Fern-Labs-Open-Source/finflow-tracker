@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { createBrokerageEntrySchema } from '@/lib/validation/schemas';
-import { BrokerageService } from '@/lib/services/brokerage.service';
+import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { createBrokerageEntrySchema } from '../../../../src/lib/validation/schemas';
+import { BrokerageService } from '../../../../src/lib/services/brokerage.service';
 import { z } from 'zod';
 
 // POST /api/brokerage/update - Update brokerage account with cash/investment split

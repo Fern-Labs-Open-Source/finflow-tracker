@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../src/components/ui/card'
 import { Button } from '../../src/components/ui/button'
-import { formatCurrency, formatPercentage, formatCompactNumber } from '@/lib/utils'
+import { formatCurrency, formatPercentage, formatCompactNumber } from '../../src/lib/utils'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -22,7 +22,7 @@ import {
   PlusCircle
 } from 'lucide-react'
 import Link from 'next/link'
-import { usePortfolioQuickStats, usePortfolioSummary } from '@/hooks/use-portfolio'
+import { usePortfolioQuickStats, usePortfolioSummary } from '../../src/hooks/use-portfolio'
 import { QuickStatsSkeleton } from '../../src/components/ui/skeleton'
 import { 
   FadeIn, 
@@ -31,11 +31,11 @@ import {
   AnimatedCard,
   AnimatedNumber,
   Pulse
-} from '@/components/animated/fade-in'
+} from '../../src/components/animated/fade-in'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import clsx from 'clsx'
-import { dataFetcher } from '@/lib/data-fetcher'
-import { useRenderTime, useLazyLoad, useDebouncedCallback, useMemoryMonitor } from '@/lib/performance'
+import { dataFetcher } from '../../src/lib/data-fetcher'
+import { useRenderTime, useLazyLoad, useDebouncedCallback, useMemoryMonitor } from '../../src/lib/performance'
 import dynamic from 'next/dynamic'
 
 // Lazy load heavy components

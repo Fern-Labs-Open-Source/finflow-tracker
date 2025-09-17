@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../src/components/ui/card'
 import { Button } from '../../src/components/ui/button'
-import { formatCurrency, formatPercentage, formatCompactNumber } from '@/lib/utils'
+import { formatCurrency, formatPercentage, formatCompactNumber } from '../../src/lib/utils'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -24,7 +24,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
-import { usePortfolioQuickStats, usePortfolioSummary } from '@/hooks/use-portfolio'
+import { usePortfolioQuickStats, usePortfolioSummary } from '../../src/hooks/use-portfolio'
 import { DashboardSkeleton, QuickStatsSkeleton } from '../../src/components/ui/skeleton'
 import { 
   FadeIn, 
@@ -34,7 +34,7 @@ import {
   AnimatedNumber,
   SlideIn,
   Pulse
-} from '@/components/animated/fade-in'
+} from '../../src/components/animated/fade-in'
 import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
 

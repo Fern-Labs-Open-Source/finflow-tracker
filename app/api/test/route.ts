@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db/prisma';
+import { prisma } from '../../../src/lib/db/prisma';
 import bcrypt from 'bcryptjs';
 
 // Test endpoint - no auth required for testing

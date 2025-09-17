@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { ExchangeRateService } from '@/lib/services/exchange-rate.service';
-import { syncExchangeRatesSchema } from '@/lib/validation/schemas';
+import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { ExchangeRateService } from '../../../../src/lib/services/exchange-rate.service';
+import { syncExchangeRatesSchema } from '../../../../src/lib/validation/schemas';
 import { Currency } from '@prisma/client';
 import { z } from 'zod';
 

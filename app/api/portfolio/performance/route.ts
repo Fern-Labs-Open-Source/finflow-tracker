@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthDev as withAuth } from '@/lib/auth/with-auth-dev';
-import { PortfolioService } from '@/lib/services/portfolio.service';
+import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { PortfolioService } from '../../../../src/lib/services/portfolio.service';
 
 // GET /api/portfolio/performance - Get portfolio performance metrics
 export const GET = withAuth(async (req: NextRequest) => {
