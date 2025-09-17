@@ -18,8 +18,8 @@
 
 ### Initial Setup
 ```bash
-# Clone repository
-git clone https://github.com/your-org/finflow-tracker.git
+# Clone repository (or use existing at /root/finflow-tracker)
+git clone https://github.com/Fern-Labs-Open-Source/finflow-tracker.git
 cd finflow-tracker
 
 # Install dependencies
