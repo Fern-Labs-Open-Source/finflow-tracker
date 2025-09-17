@@ -649,3 +649,47 @@ export async function convertCurrency(
 - [ ] Backup strategy confirmed
 - [ ] Rollback plan ready
 - [ ] Stakeholders notified
+
+## Implementation Lessons Learned (September 2024)
+
+### Key Success Factors
+1. **Test Infrastructure First**: Setting up auth bypass headers (`X-Test-Bypass-Auth`) early made development significantly faster
+2. **Comprehensive Seed Data**: Realistic test data (30 days of portfolio history) helped identify edge cases early
+3. **Service Layer Pattern**: Abstracting business logic into services (`/src/lib/services/`) improved maintainability
+4. **Type Safety**: Prisma-generated types prevented many runtime errors
+
+### Common Pitfalls to Avoid
+1. **Middleware API Protection**: Ensure middleware excludes `/api` routes from authentication checks
+2. **Missing UI Dependencies**: Install all shadcn/ui dependencies upfront (`class-variance-authority`, `clsx`, etc.)
+3. **Data Structure Alignment**: Design API responses to match frontend expectations from the start
+4. **Port Management**: Standardize on port 3000 for development to avoid conflicts
+
+### Recommended Development Flow
+1. **Backend First**: Complete all API endpoints with tests before frontend
+2. **Test Coverage Target**: Aim for 80%+ coverage on critical paths
+3. **Progressive Enhancement**: Start with functionality, then improve UX/UI
+4. **Documentation as You Go**: Update CURRENT_STATE.md after each major feature
+
+### Testing Best Practices
+1. **API Testing Script**: Create comprehensive test scripts early (`/scripts/test-*.sh`)
+2. **Auth Bypass for Dev**: Use conditional auth checking based on environment
+3. **Seed Data Scripts**: Maintain idempotent seed scripts for consistent testing
+4. **Integration Tests**: Focus on testing API routes with real database connections
+
+### Frontend Development Tips
+1. **Component Library**: Use Radix UI primitives with Tailwind for consistent styling
+2. **Chart Library**: Recharts works well for financial visualizations
+3. **Form Handling**: React Hook Form with Zod validation provides good DX
+4. **Error Boundaries**: Implement error boundaries for better error handling
+
+### Database Considerations
+1. **Neon PostgreSQL**: Works excellently with Prisma and Next.js
+2. **Connection Pooling**: Use pooled connections for serverless environments
+3. **Migration Strategy**: Test migrations on temporary branches first
+4. **Backup Strategy**: Regular exports using the CSV functionality
+
+### Security Enhancements Made
+1. **Session Management**: NextAuth.js with JWT strategy
+2. **Input Validation**: Zod schemas on all API endpoints
+3. **CORS Configuration**: Properly configured for production
+4. **Environment Variables**: All secrets in `.env.local`, never committed
