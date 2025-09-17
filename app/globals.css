@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Import performance optimizations */
-@import '@/styles/performance.css';
+@import '../src/styles/performance.css';
 /* Performance optimizations for smooth animations and reduced repaints */
 
 /* Use GPU acceleration for transforms */
