@@ -1,450 +1,351 @@
-# FinFlow Tracker - Production Deployment Guide
+# FinFlow Tracker Deployment Guide
 
-## Prerequisites
+## Overview
+FinFlow Tracker is deployed on Vercel with automated CI/CD pipelines via GitHub Actions. The application uses Neon PostgreSQL for the database and NextAuth.js for authentication.
 
-### Required Services
-- Node.js 18+ runtime environment
-- PostgreSQL database (or Neon cloud database)
-- Domain with SSL certificate
-- Environment for hosting (Vercel, AWS, DigitalOcean, etc.)
+## Architecture
 
-### Required Environment Variables
-```bash
-# Database
-DATABASE_URL="postgresql://user:password@host:5432/database?sslmode=require"
-
-# Authentication
-NEXTAUTH_URL="https://your-domain.com"
-NEXTAUTH_SECRET="generate-a-secure-random-string"
-
-# Application
-NODE_ENV="production"
-BYPASS_AUTH="false"
-
-# Optional
-SENTRY_DSN="your-sentry-dsn-for-error-tracking"
-ANALYTICS_ID="your-analytics-id"
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   GitHub     │────▶│    Vercel    │────▶│     Neon     │
+│  Repository  │     │   Hosting    │     │  PostgreSQL  │
+└──────────────┘     └──────────────┘     └──────────────┘
+       │                    │                      │
+       │                    │                      │
+       ▼                    ▼                      ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   GitHub     │     │   Next.js    │     │    Prisma    │
+│   Actions    │     │  Application │     │     ORM      │
+└──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-## Deployment Options
+## Deployment Environments
 
-### Option 1: Vercel (Recommended)
+### Production
+- **URL**: https://finflow-tracker.vercel.app (to be configured)
+- **Branch**: `main`
+- **Database**: Production Neon database
+- **Deployment**: Automatic on push to `main`
 
-1. **Connect Repository**
+### Preview
+- **URL**: Generated per pull request
+- **Branch**: Any PR branch
+- **Database**: Production database (read-only recommended)
+- **Deployment**: Automatic on PR creation/update
+
+### Development
+- **URL**: http://localhost:3000
+- **Branch**: Any local branch
+- **Database**: Development Neon branch or local PostgreSQL
+- **Deployment**: Manual via `npm run dev`
+
+## Initial Setup
+
+### 1. Vercel Project Setup
+
+1. Install Vercel CLI:
    ```bash
-   # Install Vercel CLI
-   npm i -g vercel
-   
-   # Login to Vercel
+   npm install -g vercel
+   ```
+
+2. Login to Vercel:
+   ```bash
    vercel login
-   
-   # Link project
+   ```
+
+3. Link the project:
+   ```bash
    vercel link
    ```
 
-2. **Configure Environment Variables**
-   - Go to Vercel Dashboard → Settings → Environment Variables
-   - Add all required environment variables
-   - Ensure `BYPASS_AUTH=false` for production
+4. Configure project settings in Vercel Dashboard:
+   - Framework Preset: Next.js
+   - Node.js Version: 20.x
+   - Build Command: `npm run build`
+   - Output Directory: `.next`
+   - Install Command: `npm install`
 
-3. **Deploy**
+### 2. Environment Variables
+
+#### Required Production Variables (Set in Vercel Dashboard):
+
+```env
+# Database
+DATABASE_URL="postgresql://neondb_owner:npg_MCa2yow5epmz@ep-silent-cell-a5wln18k-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require"
+
+# Authentication
+NEXTAUTH_URL="https://your-production-domain.vercel.app"
+NEXTAUTH_SECRET="your-generated-secret"  # Generate with: openssl rand -base64 32
+BYPASS_AUTH="false"
+
+# Application
+NODE_ENV="production"
+NEXT_PUBLIC_APP_NAME="FinFlow Tracker"
+NEXT_PUBLIC_APP_URL="https://your-production-domain.vercel.app"
+```
+
+#### GitHub Secrets Required:
+
+```env
+VERCEL_ORG_ID="your-vercel-org-id"
+VERCEL_PROJECT_ID="your-vercel-project-id"
+VERCEL_TOKEN="your-vercel-token"
+DATABASE_URL="production-database-url"
+NEXTAUTH_SECRET="production-secret"
+NEXTAUTH_URL="https://your-domain.vercel.app"
+```
+
+To get Vercel IDs:
+```bash
+# After linking your project
+vercel env pull .env.vercel.local
+# Check the file for VERCEL_ORG_ID and VERCEL_PROJECT_ID
+```
+
+### 3. Database Setup
+
+#### Production Database
+The production database is already configured in Neon. Connection string is stored in environment variables.
+
+#### Development Database
+1. Create a new branch in Neon for development:
+   ```bash
+   # Use Neon CLI or dashboard to create a development branch
+   ```
+
+2. Update `.env.local` with development database URL:
+   ```env
+   DATABASE_URL="your-development-database-url"
+   ```
+
+3. Run migrations:
+   ```bash
+   npx prisma migrate dev
+   ```
+
+## Deployment Process
+
+### Automated Deployment (Recommended)
+
+1. **Production Deployment**:
+   - Push or merge to `main` branch
+   - GitHub Actions runs CI pipeline
+   - If tests pass, automatically deploys to Vercel
+   - View deployment at production URL
+
+2. **Preview Deployment**:
+   - Create a pull request
+   - GitHub Actions creates preview deployment
+   - Preview URL is commented on the PR
+   - Updates with each commit
+
+### Manual Deployment
+
+1. **Using Vercel CLI**:
    ```bash
    # Deploy to production
    vercel --prod
    
-   # Or use GitHub integration for automatic deployments
+   # Deploy preview
+   vercel
    ```
 
-### Option 2: Docker Deployment
+2. **Using GitHub Actions**:
+   - Go to Actions tab in GitHub
+   - Select "Deploy to Production" workflow
+   - Click "Run workflow"
+   - Select branch and run
 
-1. **Build Docker Image**
-   ```dockerfile
-   # Dockerfile
-   FROM node:18-alpine AS builder
-   WORKDIR /app
-   COPY package*.json ./
-   RUN npm ci
-   COPY . .
-   RUN npx prisma generate
-   RUN npm run build
+## CI/CD Pipeline
 
-   FROM node:18-alpine
-   WORKDIR /app
-   COPY --from=builder /app/.next ./.next
-   COPY --from=builder /app/node_modules ./node_modules
-   COPY --from=builder /app/package*.json ./
-   COPY --from=builder /app/prisma ./prisma
-   COPY --from=builder /app/public ./public
+### GitHub Actions Workflows
 
-   EXPOSE 3000
-   CMD ["npm", "start"]
-   ```
+1. **CI Pipeline** (`ci.yml`):
+   - Triggers: Push to main/develop, PRs to main
+   - Jobs:
+     - Lint and type check
+     - Run tests
+     - Security scanning
+     - Build application
 
-2. **Build and Run**
+2. **Production Deployment** (`deploy-production.yml`):
+   - Triggers: Push to main
+   - Jobs:
+     - Run tests
+     - Build with Vercel
+     - Deploy to production
+     - Run smoke tests
+
+3. **Preview Deployment** (`deploy-preview.yml`):
+   - Triggers: Pull requests
+   - Jobs:
+     - Build with Vercel
+     - Deploy preview
+     - Comment URL on PR
+
+## Local Development
+
+### Setup
+1. Clone the repository:
    ```bash
-   docker build -t finflow-tracker .
-   docker run -p 3000:3000 --env-file .env.production finflow-tracker
-   ```
-
-### Option 3: Traditional VPS Deployment
-
-1. **Server Setup**
-   ```bash
-   # SSH into your server
-   ssh user@your-server.com
-   
-   # Install Node.js
-   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-   sudo apt-get install -y nodejs
-   
-   # Install PM2
-   npm install -g pm2
-   
-   # Clone repository
-   git clone https://github.com/your-org/finflow-tracker.git
+   git clone https://github.com/Fern-Labs-Open-Source/finflow-tracker.git
    cd finflow-tracker
    ```
 
-2. **Install Dependencies & Build**
+2. Install dependencies:
    ```bash
-   # Install dependencies
-   npm ci
-   
-   # Generate Prisma client
+   npm install
+   ```
+
+3. Copy environment template:
+   ```bash
+   cp .env.development.template .env.local
+   ```
+
+4. Configure `.env.local`:
+   - Set development database URL
+   - Set BYPASS_AUTH=true for easier development
+   - Use localhost URLs
+
+5. Run database migrations:
+   ```bash
+   npx prisma migrate dev
    npx prisma generate
-   
-   # Run migrations
-   npx prisma migrate deploy
-   
-   # Build application
-   npm run build
    ```
 
-3. **Start with PM2**
+6. Start development server:
    ```bash
-   # Create ecosystem file
-   cat > ecosystem.config.js << EOF
-   module.exports = {
-     apps: [{
-       name: 'finflow-tracker',
-       script: 'npm',
-       args: 'start',
-       env: {
-         NODE_ENV: 'production',
-         PORT: 3000
-       }
-     }]
-   }
-   EOF
-   
-   # Start application
-   pm2 start ecosystem.config.js
-   
-   # Save PM2 configuration
-   pm2 save
-   pm2 startup
+   npm run dev
    ```
 
-## Database Setup
-
-### Production Database Migration
-
-1. **Backup Existing Data** (if applicable)
-   ```bash
-   pg_dump $OLD_DATABASE_URL > backup.sql
-   ```
-
-2. **Run Migrations**
-   ```bash
-   # Set production database URL
-   export DATABASE_URL="your-production-database-url"
-   
-   # Run migrations
-   npx prisma migrate deploy
-   
-   # Verify schema
-   npx prisma db pull
-   ```
-
-3. **Seed Initial Data** (optional)
-   ```bash
-   # Create initial institutions/accounts if needed
-   npx tsx scripts/seed-production.ts
-   ```
-
-### Database Optimization
-
-1. **Add Indexes**
-   ```sql
-   -- Add indexes for frequently queried fields
-   CREATE INDEX idx_snapshots_account_date ON account_snapshots(account_id, date DESC);
-   CREATE INDEX idx_accounts_institution ON accounts(institution_id);
-   CREATE INDEX idx_exchange_rates_date ON exchange_rates(date DESC);
-   ```
-
-2. **Connection Pooling**
-   - Use PgBouncer for connection pooling
-   - Or use Prisma's connection pool settings:
-   ```
-   DATABASE_URL="postgresql://...?connection_limit=10&pool_timeout=20"
-   ```
-
-## Security Checklist
-
-### Pre-Deployment
-
-- [ ] **Environment Variables**
-  - [ ] Set `NODE_ENV=production`
-  - [ ] Set `BYPASS_AUTH=false`
-  - [ ] Generate secure `NEXTAUTH_SECRET`
-  - [ ] Verify database SSL mode
-
-- [ ] **Authentication**
-  - [ ] Configure production auth provider
-  - [ ] Set correct callback URLs
-  - [ ] Test login/logout flow
-
-- [ ] **API Security**
-  - [ ] Verify all endpoints require authentication
-  - [ ] Check rate limiting is configured
-  - [ ] Validate CORS settings
-
-- [ ] **Data Protection**
-  - [ ] Enable HTTPS only
-  - [ ] Set secure headers
-  - [ ] Configure CSP policy
-
-### Nginx Configuration (if using)
-
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name your-domain.com;
-
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
-
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';" always;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-## Performance Optimization
-
-### Caching Strategy
-
-1. **CDN Configuration**
-   - Static assets: Cache for 1 year
-   - API responses: Cache based on endpoint
-   - HTML pages: Cache for 5 minutes
-
-2. **Redis Setup** (optional)
-   ```bash
-   # Install Redis
-   sudo apt-get install redis-server
-   
-   # Configure for session storage
-   # Add to .env
-   REDIS_URL="redis://localhost:6379"
-   ```
-
-3. **Image Optimization**
-   - Use Next.js Image component
-   - Configure image domains in next.config.js
-   - Consider using image CDN
-
-### Monitoring & Logging
-
-1. **Application Monitoring**
-   ```bash
-   # Install monitoring dependencies
-   npm install @sentry/nextjs
-   
-   # Configure Sentry
-   npx @sentry/wizard -i nextjs
-   ```
-
-2. **Performance Monitoring**
-   - Set up Google Analytics or Plausible
-   - Configure Web Vitals reporting
-   - Monitor API response times
-
-3. **Error Tracking**
-   - Configure Sentry for error tracking
-   - Set up alerts for critical errors
-   - Monitor error rates
-
-4. **Logging**
-   ```javascript
-   // Configure structured logging
-   import winston from 'winston';
-   
-   const logger = winston.createLogger({
-     level: 'info',
-     format: winston.format.json(),
-     transports: [
-       new winston.transports.File({ filename: 'error.log', level: 'error' }),
-       new winston.transports.File({ filename: 'combined.log' })
-     ]
-   });
-   ```
-
-## Post-Deployment
-
-### Verification Checklist
-
-- [ ] **Functionality Testing**
-  - [ ] User registration/login works
-  - [ ] Account creation and editing
-  - [ ] Balance updates create snapshots
-  - [ ] Search and filtering work
-  - [ ] Data export functions
-
-- [ ] **Performance Testing**
-  - [ ] Page load times < 3 seconds
-  - [ ] API responses < 500ms
-  - [ ] Smooth animations (60 FPS)
-  - [ ] Mobile performance acceptable
-
-- [ ] **Security Testing**
-  - [ ] HTTPS enforced
-  - [ ] Authentication required for protected routes
-  - [ ] No sensitive data in responses
-  - [ ] CORS properly configured
-
-### Maintenance Tasks
-
-1. **Regular Backups**
-   ```bash
-   # Daily backup script
-   #!/bin/bash
-   DATE=$(date +%Y%m%d)
-   pg_dump $DATABASE_URL > backup_$DATE.sql
-   # Upload to S3 or other storage
-   ```
-
-2. **Database Maintenance**
-   ```sql
-   -- Weekly maintenance
-   VACUUM ANALYZE;
-   REINDEX DATABASE finflow;
-   ```
-
-3. **Dependency Updates**
-   ```bash
-   # Monthly security updates
-   npm audit fix
-   npm update
-   ```
-
-## Rollback Plan
-
-### Quick Rollback
-
-1. **Vercel**: Use instant rollback feature
-2. **Docker**: Switch to previous image tag
-3. **Traditional**: 
-   ```bash
-   # Revert to previous commit
-   git checkout [previous-commit]
-   npm run build
-   pm2 restart finflow-tracker
-   ```
-
-### Database Rollback
+### Common Commands
 
 ```bash
-# Restore from backup
-psql $DATABASE_URL < backup.sql
+# Development
+npm run dev           # Start development server
+npm run build        # Build for production
+npm start            # Start production server locally
 
-# Or rollback migration
-npx prisma migrate rollback
+# Database
+npx prisma migrate dev     # Run migrations in development
+npx prisma migrate deploy  # Run migrations in production
+npx prisma studio         # Open Prisma Studio
+npx prisma generate       # Generate Prisma Client
+
+# Testing
+npm test             # Run tests
+npm run lint         # Run ESLint
+npm run type-check   # Run TypeScript checks
+
+# Deployment
+vercel              # Deploy preview
+vercel --prod       # Deploy to production
+vercel env pull     # Pull environment variables
 ```
 
-## Scaling Considerations
+## Monitoring and Logs
 
-### Horizontal Scaling
+### Vercel Dashboard
+- View deployments: https://vercel.com/dashboard
+- Check function logs
+- Monitor performance metrics
+- View error reports
 
-1. **Load Balancing**
-   - Use Nginx or HAProxy
-   - Configure sticky sessions for auth
-   - Health check endpoints
+### GitHub Actions
+- Check workflow runs in Actions tab
+- View logs for each job
+- Debug failed deployments
 
-2. **Database Scaling**
-   - Read replicas for queries
-   - Connection pooling
-   - Consider sharding for large datasets
+## Rollback Process
 
-3. **Caching Layer**
-   - Redis for session storage
-   - CDN for static assets
-   - API response caching
+### Quick Rollback
+1. Go to Vercel Dashboard
+2. Navigate to Deployments
+3. Find previous stable deployment
+4. Click "..." menu → "Promote to Production"
 
-### Vertical Scaling
+### Git Rollback
+```bash
+# Revert last commit
+git revert HEAD
+git push origin main
 
-- Monitor CPU and memory usage
-- Upgrade server resources as needed
-- Optimize database queries
-- Implement pagination for large datasets
+# Or reset to specific commit
+git reset --hard <commit-hash>
+git push --force origin main
+```
 
-## Support & Troubleshooting
+## Security Considerations
+
+1. **Secrets Management**:
+   - Never commit `.env` files
+   - Use GitHub Secrets for CI/CD
+   - Rotate secrets regularly
+   - Use different secrets for each environment
+
+2. **Database Security**:
+   - Use connection pooling
+   - Enable SSL/TLS
+   - Restrict IP access in production
+   - Use read-only credentials where possible
+
+3. **Authentication**:
+   - Always use HTTPS in production
+   - Set secure NEXTAUTH_SECRET
+   - Configure CORS properly
+   - Implement rate limiting
+
+## Troubleshooting
 
 ### Common Issues
 
-1. **Database Connection Issues**
-   - Check DATABASE_URL format
-   - Verify SSL certificates
-   - Check connection limits
+1. **Build Failures**:
+   - Check Node.js version (should be 20.x)
+   - Clear cache: `rm -rf .next node_modules`
+   - Reinstall dependencies: `npm ci`
 
-2. **Authentication Problems**
-   - Verify NEXTAUTH_URL matches domain
+2. **Database Connection**:
+   - Verify DATABASE_URL is correct
+   - Check SSL settings
+   - Ensure migrations are up to date
+
+3. **Authentication Issues**:
+   - Verify NEXTAUTH_URL matches deployment URL
    - Check NEXTAUTH_SECRET is set
-   - Confirm callback URLs
+   - Ensure callback URLs are configured
 
-3. **Performance Issues**
-   - Check database indexes
-   - Monitor API response times
-   - Review caching configuration
+4. **Deployment Issues**:
+   - Check Vercel logs
+   - Verify environment variables
+   - Check GitHub Actions logs
+   - Ensure build command is correct
 
-### Getting Help
+### Debug Commands
 
-- GitHub Issues: [github.com/your-org/finflow-tracker/issues](https://github.com)
-- Documentation: [docs/](./docs/)
-- Logs: Check application and server logs
+```bash
+# Check environment
+vercel env ls
 
-## Final Checklist
+# View logs
+vercel logs
 
-Before going live:
+# Check build output
+vercel inspect
 
-- [ ] All environment variables configured
-- [ ] Database migrated and backed up
-- [ ] SSL certificate installed
-- [ ] Authentication tested
-- [ ] Monitoring configured
-- [ ] Error tracking enabled
-- [ ] Backup strategy implemented
-- [ ] Team trained on deployment process
-- [ ] Rollback plan documented and tested
-- [ ] Performance benchmarks met
+# Test build locally
+vercel build
+vercel dev
+```
 
-## Conclusion
+## Support
 
-Your FinFlow Tracker application is now ready for production deployment. Follow this guide carefully, test thoroughly, and monitor closely during the initial deployment phase. 
+For deployment issues:
+1. Check Vercel status: https://www.vercel-status.com/
+2. Review GitHub Actions logs
+3. Check Neon database status
+4. Contact team lead or DevOps
 
-Good luck with your deployment! 🚀
+## Version History
+
+- v1.0.0 - Initial deployment setup with Vercel and GitHub Actions
+- Latest updates in this document reflect current deployment configuration
