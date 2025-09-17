@@ -29,10 +29,7 @@ export const GET = withAuth(async (req: NextRequest) => {
     if (!type || type === 'accounts' || type === 'all') {
       const accounts = await prisma.account.findMany({
         where: {
-          OR: [
-            { name: { contains: query, mode: 'insensitive' } },
-            { type: { contains: query, mode: 'insensitive' } },
-          ],
+          name: { contains: query, mode: 'insensitive' },
         },
         include: {
           institution: {
