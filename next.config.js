@@ -3,6 +3,12 @@ const nextConfig = {
   // Enable React strict mode for better debugging
   reactStrictMode: true,
   
+  // Output configuration for Docker deployment
+  output: 'standalone',
+  
+  // Set output file tracing root
+  outputFileTracingRoot: require('path').join(__dirname, '../../'),
+  
   // Optimize images
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -86,9 +92,10 @@ const nextConfig = {
           lib: {
             test: /[\\/]node_modules[\\/]/,
             name(module) {
-              const packageName = module.context.match(
+              const match = module.context.match(
                 /[\\/]node_modules[\\/](.*?)([[\\/]|$])/
-              )[1]
+              )
+              const packageName = match ? match[1] : 'vendor'
               return `npm.${packageName.replace('@', '')}`
             },
             priority: 30,

@@ -1,0 +1,22 @@
+# Render Blueprint for FinFlow Tracker
+services:
+  - type: web
+    name: finflow-tracker
+    runtime: node
+    repo: https://github.com/Fern-Labs-Open-Source/finflow-tracker
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Will be set in Render dashboard
+      - key: NEXTAUTH_URL
+        sync: false # Will be set after deployment
+      - key: NEXTAUTH_SECRET
+        generateValue: true # Auto-generate a secure secret
+      - key: BYPASS_AUTH
+        value: false
+      - key: PORT
+        value: 3000
