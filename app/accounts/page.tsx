@@ -1,5 +1,6 @@
-import AccountsClient from './accounts-client'
+// Switch to optimized accounts for better performance with virtual scrolling
+import OptimizedAccounts from './optimized-accounts'
 
 export default function AccountsPage() {
-  return <AccountsClient />
+  return <OptimizedAccounts />
 }

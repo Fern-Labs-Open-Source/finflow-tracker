@@ -1,5 +1,6 @@
-import DashboardClient from './dashboard-client'
+// Switch to optimized dashboard for better performance
+import OptimizedDashboard from './optimized-dashboard'
 
 export default function DashboardPage() {
-  return <DashboardClient />
+  return <OptimizedDashboard />
 }
