@@ -14,6 +14,47 @@ if [ ! -f "package.json" ] || [ ! -d ".git" ]; then
     exit 1
 fi
 
+# Check if SSH key already exists and is configured
+if [ -f ~/.ssh/id_ed25519 ]; then
+    echo "✅ SSH key found at ~/.ssh/id_ed25519"
+    echo ""
+    echo "📋 Your SSH public key is:"
+    echo "------------------------"
+    cat ~/.ssh/id_ed25519.pub
+    echo "------------------------"
+    echo ""
+    echo "🔍 Testing GitHub SSH connection..."
+    ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"
+    if [ $? -eq 0 ]; then
+        echo "✅ SSH authentication is working!"
+        echo ""
+        echo "🎉 Your environment is already set up to use SSH!"
+        echo "   Repository is configured to use: git@github.com:Fern-Labs-Open-Source/finflow-tracker.git"
+        echo ""
+        echo "You can now use git commands without any additional authentication:"
+        echo "  git pull"
+        echo "  git push"
+        echo "  git fetch"
+        echo ""
+        exit 0
+    else
+        echo "⚠️  SSH key exists but is not authorized on GitHub"
+        echo ""
+        echo "To fix this:"
+        echo "1. Copy the SSH key above"
+        echo "2. Go to https://github.com/settings/keys"
+        echo "3. Click 'New SSH key'"
+        echo "4. Paste the key and save"
+        echo ""
+        read -p "Have you added the SSH key to GitHub? (y/n): " ssh_added
+        if [ "$ssh_added" = "y" ] || [ "$ssh_added" = "Y" ]; then
+            git remote set-url origin git@github.com:Fern-Labs-Open-Source/finflow-tracker.git
+            echo "✅ Repository configured to use SSH!"
+            exit 0
+        fi
+    fi
+fi
+
 echo "This script will help you set up Git authentication for the FinFlow Tracker repository."
 echo ""
 echo "You have two options for authentication:"
