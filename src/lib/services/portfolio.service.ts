@@ -12,6 +12,28 @@ interface PortfolioSummary {
   lastUpdated: Date | null;
 }
 
+interface DetailedPortfolioSummary {
+  totalNetWorth: number;
+  totalNetWorthInBaseCurrency: number;
+  baseCurrency: string;
+  accountsByType: {
+    type: string;
+    count: number;
+    totalBalance: number;
+    totalBalanceInBaseCurrency: number;
+  }[];
+  accountsByCurrency: {
+    currency: string;
+    count: number;
+    totalBalance: number;
+    totalBalanceInBaseCurrency: number;
+  }[];
+  changeFromLastSnapshot: {
+    absolute: number;
+    percentage: number;
+  } | null;
+}
+
 interface HistoricalDataPoint {
   date: Date;
   totalValue: number;
@@ -23,6 +45,97 @@ interface HistoricalDataPoint {
 }
 
 export class PortfolioService {
+  /**
+   * Get detailed portfolio summary for dashboard
+   */
+  static async getDetailedPortfolioSummary(
+    includeInactive = false
+  ): Promise<DetailedPortfolioSummary> {
+    const baseCurrency = 'EUR'; // Default base currency
+    
+    // Get all accounts with their latest snapshots
+    const accounts = await prisma.account.findMany({
+      where: includeInactive ? {} : { isActive: true },
+      include: {
+        institution: true,
+        snapshots: {
+          orderBy: { date: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    let totalNetWorthInBaseCurrency = 0;
+    const accountsByTypeMap = new Map<string, { count: number; totalBalance: number; totalBalanceInBaseCurrency: number }>();
+    const accountsByCurrencyMap = new Map<string, { count: number; totalBalance: number; totalBalanceInBaseCurrency: number }>();
+
+    for (const account of accounts) {
+      const latestSnapshot = account.snapshots[0];
+      if (!latestSnapshot) continue;
+
+      const valueInBaseCurrency = latestSnapshot.valueEur.toNumber();
+      const originalValue = latestSnapshot.valueOriginal.toNumber();
+      
+      totalNetWorthInBaseCurrency += valueInBaseCurrency;
+
+      // Group by type
+      const typeData = accountsByTypeMap.get(account.type) || { count: 0, totalBalance: 0, totalBalanceInBaseCurrency: 0 };
+      typeData.count += 1;
+      typeData.totalBalance += originalValue;
+      typeData.totalBalanceInBaseCurrency += valueInBaseCurrency;
+      accountsByTypeMap.set(account.type, typeData);
+
+      // Group by currency
+      const currencyData = accountsByCurrencyMap.get(account.currency) || { count: 0, totalBalance: 0, totalBalanceInBaseCurrency: 0 };
+      currencyData.count += 1;
+      currencyData.totalBalance += originalValue;
+      currencyData.totalBalanceInBaseCurrency += valueInBaseCurrency;
+      accountsByCurrencyMap.set(account.currency, currencyData);
+    }
+
+    // Calculate change from previous day
+    let changeFromLastSnapshot = null;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    const previousSnapshots = await prisma.accountSnapshot.findMany({
+      where: {
+        accountId: { in: accounts.map(a => a.id) },
+        date: {
+          gte: yesterday,
+          lt: new Date(yesterday.getTime() + 24 * 60 * 60 * 1000),
+        },
+      },
+    });
+
+    if (previousSnapshots.length > 0) {
+      const previousTotal = previousSnapshots.reduce((sum, snap) => sum + snap.valueEur.toNumber(), 0);
+      const absoluteChange = totalNetWorthInBaseCurrency - previousTotal;
+      const percentageChange = previousTotal !== 0 ? (absoluteChange / previousTotal) * 100 : 0;
+      
+      changeFromLastSnapshot = {
+        absolute: absoluteChange,
+        percentage: percentageChange,
+      };
+    }
+
+    return {
+      totalNetWorth: totalNetWorthInBaseCurrency,
+      totalNetWorthInBaseCurrency,
+      baseCurrency,
+      accountsByType: Array.from(accountsByTypeMap.entries()).map(([type, data]) => ({
+        type,
+        ...data,
+      })),
+      accountsByCurrency: Array.from(accountsByCurrencyMap.entries()).map(([currency, data]) => ({
+        currency,
+        ...data,
+      })),
+      changeFromLastSnapshot,
+    };
+  }
+
   /**
    * Get current portfolio summary
    */

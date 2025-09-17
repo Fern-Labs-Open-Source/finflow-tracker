@@ -7,8 +7,11 @@ export const GET = withAuth(async (req: NextRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const includeInactive = searchParams.get('includeInactive') === 'true';
+    const detailed = searchParams.get('detailed') !== 'false'; // Default to detailed
 
-    const summary = await PortfolioService.getPortfolioSummary(includeInactive);
+    const summary = detailed 
+      ? await PortfolioService.getDetailedPortfolioSummary(includeInactive)
+      : await PortfolioService.getPortfolioSummary(includeInactive);
 
     return NextResponse.json(summary);
   } catch (error) {

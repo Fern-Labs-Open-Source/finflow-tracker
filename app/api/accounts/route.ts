@@ -46,8 +46,10 @@ export const GET = withAuth(async (req: NextRequest) => {
       const latestSnapshot = account.snapshots[0];
       return {
         ...account,
+        currentBalance: latestSnapshot?.valueOriginal.toNumber() || 0,
         latestValue: latestSnapshot?.valueOriginal.toNumber() || 0,
         latestValueEur: latestSnapshot?.valueEur.toNumber() || 0,
+        lastSnapshotDate: latestSnapshot?.date || null,
         lastUpdated: latestSnapshot?.date || null,
       };
     });
