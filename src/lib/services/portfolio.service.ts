@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db/prisma';
+import { prisma } from '../db/prisma';
 import { Currency } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { ExchangeRateService } from './exchange-rate.service';

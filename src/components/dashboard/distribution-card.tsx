@@ -1,8 +1,8 @@
 'use client'
 
 import { memo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatCurrency, formatPercentage } from '@/lib/utils'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { formatCurrency, formatPercentage } from '../../lib/utils'
 import { motion } from 'framer-motion'
 import clsx from 'clsx'
 

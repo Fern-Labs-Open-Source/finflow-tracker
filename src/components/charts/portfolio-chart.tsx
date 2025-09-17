@@ -16,7 +16,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate } from '../../lib/utils'
 
 interface PortfolioChartProps {
   data: any[]

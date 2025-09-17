@@ -1,5 +1,5 @@
 import useSWR, { SWRConfiguration } from 'swr';
-import { apiClient } from '@/lib/api/client';
+import { apiClient } from '../lib/api/client';
 
 const fetcher = (url: string) => apiClient.get(url);
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency } from '../../lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, X, Edit2, TrendingUp, TrendingDown } from 'lucide-react'
 import clsx from 'clsx'

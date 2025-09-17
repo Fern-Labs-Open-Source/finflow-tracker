@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency } from '../../lib/utils';
 
 interface WelcomeCardProps {
   userName?: string;
