@@ -4,9 +4,9 @@ import { useState, useCallback, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../src/components/ui/card'
+import { Button } from '../../src/components/ui/button'
+import { Input } from '../../src/components/ui/input'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { EditableBalance } from '@/components/accounts/editable-balance'
 import { 
@@ -34,7 +34,7 @@ import {
   Check
 } from 'lucide-react'
 import { useAccounts, useSearch } from '@/hooks/use-accounts'
-import { AccountCardSkeleton } from '@/components/ui/skeleton'
+import { AccountCardSkeleton } from '../../src/components/ui/skeleton'
 import { 
   FadeIn, 
   StaggeredFadeIn, 

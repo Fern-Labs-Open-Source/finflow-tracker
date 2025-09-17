@@ -3,8 +3,8 @@
 import { useState, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../src/components/ui/card'
+import { Button } from '../../src/components/ui/button'
 import { formatCurrency, formatPercentage, formatDate } from '@/lib/utils'
 import { 
   ChevronLeft,
@@ -23,7 +23,7 @@ import {
   Info
 } from 'lucide-react'
 import { usePortfolioHistory, usePortfolioSummary, usePortfolioQuickStats } from '@/hooks/use-portfolio'
-import { ChartSkeleton } from '@/components/ui/skeleton'
+import { ChartSkeleton } from '../../src/components/ui/skeleton'
 import { 
   FadeIn, 
   StaggeredFadeIn, 

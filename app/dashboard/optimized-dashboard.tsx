@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../src/components/ui/card'
+import { Button } from '../../src/components/ui/button'
 import { formatCurrency, formatPercentage, formatCompactNumber } from '@/lib/utils'
 import { 
   TrendingUp, 
@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePortfolioQuickStats, usePortfolioSummary } from '@/hooks/use-portfolio'
-import { QuickStatsSkeleton } from '@/components/ui/skeleton'
+import { QuickStatsSkeleton } from '../../src/components/ui/skeleton'
 import { 
   FadeIn, 
   StaggeredFadeIn, 

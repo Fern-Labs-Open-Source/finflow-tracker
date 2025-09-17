@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Button } from '@/components/ui/button'
+import { Button } from '../src/components/ui/button'
 import { ArrowRight, TrendingUp, PiggyBank, Target } from 'lucide-react'
 
 export default function Home() {
