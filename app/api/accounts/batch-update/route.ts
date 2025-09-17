@@ -21,9 +21,9 @@ const batchUpdateSchema = z.object({
 export const POST = withAuth(async (req: NextRequest) => {
   const { data, error } = await validateRequest(req, batchUpdateSchema);
   
-  if (error) {
+  if (error || !data) {
     return NextResponse.json(
-      { error: error.message, fieldErrors: error.fields },
+      { error: error?.message || 'Invalid request data', fieldErrors: error?.fields },
       { status: 400 }
     );
   }

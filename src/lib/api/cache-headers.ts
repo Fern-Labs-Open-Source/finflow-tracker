@@ -2,6 +2,8 @@
  * Cache control utilities for API responses
  */
 
+import { NextResponse } from 'next/server';
+
 export const CacheHeaders = {
   /**
    * No caching - for sensitive or real-time data
@@ -61,9 +63,9 @@ export const CacheHeaders = {
  * Add cache headers to a NextResponse
  */
 export function addCacheHeaders(
-  response: Response,
+  response: NextResponse,
   headers: Record<string, string>
-): Response {
+): NextResponse {
   Object.entries(headers).forEach(([key, value]) => {
     response.headers.set(key, value);
   });

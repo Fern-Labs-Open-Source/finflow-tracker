@@ -51,7 +51,7 @@ export const POST = withAuth(async function handler(
       })
 
       if (latestRate) {
-        exchangeRate = latestRate.rate
+        exchangeRate = Number(latestRate.rate)
         valueEur = balance * exchangeRate
       }
     }
@@ -89,10 +89,10 @@ export const POST = withAuth(async function handler(
 
     // Calculate change metrics
     const change = previousSnapshot 
-      ? balance - previousSnapshot.valueOriginal 
+      ? balance - Number(previousSnapshot.valueOriginal) 
       : 0
-    const changePercent = previousSnapshot && previousSnapshot.valueOriginal > 0
-      ? (change / previousSnapshot.valueOriginal) * 100
+    const changePercent = previousSnapshot && Number(previousSnapshot.valueOriginal) > 0
+      ? (change / Number(previousSnapshot.valueOriginal)) * 100
       : 0
 
     return NextResponse.json({
