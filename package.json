@@ -5,7 +5,7 @@
   "description": "Personal net worth tracking application with multi-currency support",
   "scripts": {
     "dev": "next dev",
-    "build": "npx prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
@@ -22,7 +22,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "pre-commit": "npm run lint && npm run type-check && npm run test:changed",
     "check:security": "npm audit && npx gitleaks detect --source .",
-    "export:csv": "node scripts/export-csv.js"
+    "export:csv": "node scripts/export-csv.js",
+    "postinstall": "npx prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
@@ -64,6 +65,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.13.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/jest": "^29.5.11",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
