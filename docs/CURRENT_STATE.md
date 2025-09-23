@@ -198,6 +198,32 @@ GITHUB_CLIENT_SECRET - For GitHub OAuth (optional)
 - Build command: `npm run build`
 - Publish directory: `.next`
 
+### Deployment Checklist for Authentication Update
+
+After merging PR #4 (Multi-User Authentication):
+
+1. **Update Environment Variables on Netlify:**
+   ```
+   NEXTAUTH_SECRET=<generate-new-secret>  # Generate with: openssl rand -base64 32
+   NEXTAUTH_URL=https://finflow-tracker-fern.netlify.app
+   BYPASS_AUTH=false  # Turn off auth bypass
+   DATABASE_URL=<keep-existing>
+   ```
+
+2. **Database Migration:**
+   - The Prisma migration will run automatically during build
+   - Or manually run: `npx prisma migrate deploy`
+
+3. **Optional OAuth Setup (add when ready):**
+   ```
+   GOOGLE_CLIENT_ID=<from-google-console>
+   GOOGLE_CLIENT_SECRET=<from-google-console>
+   GITHUB_CLIENT_ID=<from-github-settings>
+   GITHUB_CLIENT_SECRET=<from-github-settings>
+   ```
+   - OAuth will work immediately once these are added
+   - No code changes needed!
+
 ### Local Development
 ```bash
 # Install dependencies
