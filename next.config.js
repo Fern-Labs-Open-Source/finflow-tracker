@@ -29,8 +29,7 @@ const nextConfig = {
   
   // Experimental features for performance
   experimental: {
-    // Optimize CSS
-    optimizeCss: true,
+    // Features compatible with Next.js 14
   },
   
   // Headers for better caching

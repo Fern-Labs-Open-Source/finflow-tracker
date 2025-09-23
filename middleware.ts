@@ -3,6 +3,11 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
 export async function middleware(request: NextRequest) {
+  // Temporarily bypass auth for Netlify debugging
+  if (process.env.BYPASS_AUTH === 'true') {
+    return NextResponse.next()
+  }
+
   const token = await getToken({ req: request })
   const isAuthPage = request.nextUrl.pathname === '/login'
   const isPublicPath = request.nextUrl.pathname === '/'
