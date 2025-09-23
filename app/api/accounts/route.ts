@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../src/lib/db/prisma';
-import { withAuthDev as withAuth } from '../../../src/lib/auth/with-auth-dev';
+import { withAuthDev as withAuth, AuthenticatedRequest } from '../../../src/lib/auth/with-auth-dev';
 import { createAccountSchema } from '../../../src/lib/validation/schemas';
 import { createValidationErrorResponse } from '../../../src/lib/validation/error-formatter';
 import { CacheHeaders, addCacheHeaders } from '../../../src/lib/api/cache-headers';
 import { parsePaginationParams, calculateOffset, createPaginatedResponse } from '../../../src/lib/api/pagination';
 import { z } from 'zod';
 
-// GET /api/accounts - Get all accounts with optional pagination
-export const GET = withAuth(async (req: NextRequest) => {
+// GET /api/accounts - Get all accounts for the authenticated user with optional pagination
+export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     const includeInactive = searchParams.get('includeInactive') === 'true';
     const institutionId = searchParams.get('institutionId');
     const usePagination = searchParams.get('paginated') === 'true';
     
-    const where: any = {};
+    // CRITICAL: Filter by authenticated user
+    const where: any = {
+      userId: req.userId
+    };
+    
     if (!includeInactive) {
       where.isActive = true;
     }
@@ -126,26 +130,32 @@ export const GET = withAuth(async (req: NextRequest) => {
   }
 });
 
-// POST /api/accounts - Create a new account
-export const POST = withAuth(async (req: NextRequest) => {
+// POST /api/accounts - Create a new account for the authenticated user
+export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
     const body = await req.json();
     const validatedData = createAccountSchema.parse(body);
 
-    // Check if institution exists
-    const institution = await prisma.institution.findUnique({
-      where: { id: validatedData.institutionId },
+    // Check if institution exists and belongs to the user
+    const institution = await prisma.institution.findFirst({
+      where: { 
+        id: validatedData.institutionId,
+        userId: req.userId // CRITICAL: Ensure institution belongs to user
+      },
     });
 
     if (!institution) {
       return NextResponse.json(
-        { error: 'Institution not found' },
+        { error: 'Institution not found or access denied' },
         { status: 404 }
       );
     }
 
     const account = await prisma.account.create({
-      data: validatedData,
+      data: {
+        ...validatedData,
+        userId: req.userId!, // CRITICAL: Associate with authenticated user (guaranteed by middleware)
+      },
       include: {
         institution: true,
       },

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { withAuthDev as withAuth, AuthenticatedRequest } from '../../../../src/lib/auth/with-auth-dev';
 import { PortfolioService } from '../../../../src/lib/services/portfolio.service';
 
-// GET /api/portfolio/history - Get historical portfolio data
-export const GET = withAuth(async (req: NextRequest) => {
+// GET /api/portfolio/history - Get historical portfolio data for authenticated user
+export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(req.url);
     
@@ -21,7 +21,8 @@ export const GET = withAuth(async (req: NextRequest) => {
     const history = await PortfolioService.getHistoricalData(
       startDate,
       endDate,
-      includeInactive
+      includeInactive,
+      req.userId
     );
 
     return NextResponse.json(history);

@@ -1,14 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { withAuthDev as withAuth, AuthenticatedRequest } from '../../../../src/lib/auth/with-auth-dev';
 import { createBrokerageEntrySchema } from '../../../../src/lib/validation/schemas';
 import { BrokerageService } from '../../../../src/lib/services/brokerage.service';
+import { prisma } from '../../../../src/lib/db/prisma';
 import { z } from 'zod';
 
 // POST /api/brokerage/update - Update brokerage account with cash/investment split
-export const POST = withAuth(async (req: NextRequest) => {
+export const POST = withAuth(async (req: AuthenticatedRequest) => {
   try {
     const body = await req.json();
     const validatedData = createBrokerageEntrySchema.parse(body);
+
+    // Verify the brokerage account belongs to the user
+    const account = await prisma.account.findFirst({
+      where: {
+        id: validatedData.brokerageAccountId,
+        userId: req.userId,
+      }
+    });
+
+    if (!account) {
+      return NextResponse.json(
+        { error: 'Brokerage account not found or access denied' },
+        { status: 404 }
+      );
+    }
 
     const result = await BrokerageService.processBrokerageEntry(
       validatedData.brokerageAccountId,

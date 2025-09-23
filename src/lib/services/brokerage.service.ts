@@ -106,6 +106,7 @@ export class BrokerageService {
       if (!cashAccount) {
         cashAccount = await tx.account.create({
           data: {
+            userId: brokerageAccount.userId,
             institutionId: brokerageAccount.institutionId,
             name: `${brokerageAccount.name} - Cash`,
             type: AccountType.BROKERAGE_CASH,
@@ -122,6 +123,7 @@ export class BrokerageService {
       if (!investmentAccount) {
         investmentAccount = await tx.account.create({
           data: {
+            userId: brokerageAccount.userId,
             institutionId: brokerageAccount.institutionId,
             name: `${brokerageAccount.name} - Investments`,
             type: AccountType.BROKERAGE_INVESTMENT,

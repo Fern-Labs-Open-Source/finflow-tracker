@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../../src/lib/db/prisma';
-import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { withAuthDev as withAuth, AuthenticatedRequest } from '../../../../src/lib/auth/with-auth-dev';
 import { updateAccountSchema } from '../../../../src/lib/validation/schemas';
 import { z } from 'zod';
 
@@ -9,10 +9,13 @@ interface RouteParams {
 }
 
 // GET /api/accounts/[id] - Get a specific account
-export const GET = withAuth(async (req: NextRequest, { params }: RouteParams) => {
+export const GET = withAuth(async (req: AuthenticatedRequest, { params }: RouteParams) => {
   try {
-    const account = await prisma.account.findUnique({
-      where: { id: params.id },
+    const account = await prisma.account.findFirst({
+      where: { 
+        id: params.id,
+        userId: req.userId // CRITICAL: Ensure account belongs to user
+      },
       include: {
         institution: true,
         parentAccount: true,
@@ -26,7 +29,7 @@ export const GET = withAuth(async (req: NextRequest, { params }: RouteParams) =>
 
     if (!account) {
       return NextResponse.json(
-        { error: 'Account not found' },
+        { error: 'Account not found or access denied' },
         { status: 404 }
       );
     }
@@ -81,8 +84,23 @@ export const GET = withAuth(async (req: NextRequest, { params }: RouteParams) =>
 });
 
 // PATCH /api/accounts/[id] - Update an account
-export const PATCH = withAuth(async (req: NextRequest, { params }: RouteParams) => {
+export const PATCH = withAuth(async (req: AuthenticatedRequest, { params }: RouteParams) => {
   try {
+    // First verify the account belongs to the user
+    const existingAccount = await prisma.account.findFirst({
+      where: {
+        id: params.id,
+        userId: req.userId // CRITICAL: Ensure account belongs to user
+      }
+    });
+
+    if (!existingAccount) {
+      return NextResponse.json(
+        { error: 'Account not found or access denied' },
+        { status: 404 }
+      );
+    }
+
     const body = await req.json();
     const validatedData = updateAccountSchema.parse(body);
 
@@ -112,11 +130,29 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteParams) 
 });
 
 // DELETE /api/accounts/[id] - Delete an account
-export const DELETE = withAuth(async (req: NextRequest, { params }: RouteParams) => {
+export const DELETE = withAuth(async (req: AuthenticatedRequest, { params }: RouteParams) => {
   try {
+    // First verify the account belongs to the user
+    const existingAccount = await prisma.account.findFirst({
+      where: {
+        id: params.id,
+        userId: req.userId // CRITICAL: Ensure account belongs to user
+      }
+    });
+
+    if (!existingAccount) {
+      return NextResponse.json(
+        { error: 'Account not found or access denied' },
+        { status: 404 }
+      );
+    }
+
     // Check if account has child accounts
     const childCount = await prisma.account.count({
-      where: { parentAccountId: params.id },
+      where: { 
+        parentAccountId: params.id,
+        userId: req.userId 
+      },
     });
 
     if (childCount > 0) {
