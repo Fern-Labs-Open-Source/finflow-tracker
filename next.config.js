@@ -11,9 +11,6 @@ const nextConfig = {
   // Output configuration for Docker deployment
   // output: 'standalone', // Disabled for Netlify
   
-  // Set output file tracing root
-  outputFileTracingRoot: require('path').join(__dirname, '../../'),
-  
   // Optimize images
   images: {
     formats: ['image/avif', 'image/webp'],
