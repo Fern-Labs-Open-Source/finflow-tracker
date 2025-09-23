@@ -9,7 +9,7 @@ const nextConfig = {
   },
   
   // Output configuration for Docker deployment
-  output: 'standalone',
+  // output: 'standalone', // Disabled for Netlify
   
   // Set output file tracing root
   outputFileTracingRoot: require('path').join(__dirname, '../../'),
