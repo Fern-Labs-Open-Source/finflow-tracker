@@ -63,7 +63,7 @@ export function VirtualList<T>({
   const [scrollTop, setScrollTop] = useState(0)
   const [containerHeight, setContainerHeight] = useState(0)
   const [isScrolling, setIsScrolling] = useState(false)
-  const scrollTimeoutRef = useRef<NodeJS.Timeout>()
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const heightCacheRef = useRef<Map<number, number>>(new Map())
   const endReachedRef = useRef(false)
 

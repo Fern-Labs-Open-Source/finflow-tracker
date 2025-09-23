@@ -159,7 +159,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   delay: number
 ) {
   const [isDebouncing, setIsDebouncing] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const callbackRef = useRef(callback)
   
   callbackRef.current = callback
@@ -190,15 +190,15 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
 
 // Request Animation Frame hook for smooth animations
 export function useAnimationFrame(callback: (deltaTime: number) => void) {
-  const requestRef = useRef<number>()
-  const previousTimeRef = useRef<number>()
+  const requestRef = useRef<number | null>(null)
+  const previousTimeRef = useRef<number | null>(null)
   const callbackRef = useRef(callback)
   
   callbackRef.current = callback
   
   useEffect(() => {
     const animate = (time: number) => {
-      if (previousTimeRef.current !== undefined) {
+      if (previousTimeRef.current !== undefined && previousTimeRef.current !== null) {
         const deltaTime = time - previousTimeRef.current
         callbackRef.current(deltaTime)
       }
@@ -268,7 +268,7 @@ export function useBatchedUpdates<T>(
 ) {
   const [value, setValue] = useState(initialValue)
   const pendingUpdates = useRef<T[]>([])
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   const batchUpdate = useCallback((newValue: T) => {
     pendingUpdates.current.push(newValue)

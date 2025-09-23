@@ -152,7 +152,7 @@ async function seedDemoData() {
           accountId: account.id,
           date,
           valueOriginal: Math.round(value * 100) / 100,
-          currency,
+          currency: currency as any,
           valueEur: Math.round(value * exchangeRate * 100) / 100,
           exchangeRate,
           notes: i === 0 ? 'Latest snapshot' : null,
@@ -179,7 +179,7 @@ async function seedDemoData() {
       }
     })
 
-    const totalValue = latestSnapshots.reduce((sum, s) => sum + s.valueEur, 0)
+    const totalValue = latestSnapshots.reduce((sum, s) => sum + Number(s.valueEur), 0)
 
     console.log('\n📊 Demo Data Summary:')
     console.log(`   - Institutions: 4`)

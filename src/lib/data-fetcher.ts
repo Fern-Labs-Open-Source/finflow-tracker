@@ -294,7 +294,7 @@ export function useDataFetch<T = any>(
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<Error | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const intervalRef = useRef<NodeJS.Timeout>()
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
   
   const fetchData = useCallback(async () => {
     if (options?.enabled === false) return
@@ -337,7 +337,9 @@ export function useDataFetch<T = any>(
   }, [url, options, fetchData])
   
   const mutate = useCallback((newData: T | ((prev: T | null) => T)) => {
-    const updated = typeof newData === 'function' ? newData(data) : newData
+    const updated = typeof newData === 'function' 
+      ? (newData as (prev: T | null) => T)(data) 
+      : newData
     setData(updated)
     dataFetcher.mutate(url, updated, options)
   }, [url, options, data])

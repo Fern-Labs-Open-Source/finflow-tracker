@@ -287,14 +287,21 @@ function MonthlyComparison({ data }: any) {
 }
 
 // Key metrics cards
-function MetricCard({ title, value, change, icon: Icon, color, prefix = '' }: any) {
-  const isPositive = change >= 0
-  const colorClasses = {
+function MetricCard({ title, value, change, icon: Icon, color, prefix = '' }: {
+  title: string;
+  value: string | number;
+  change?: number;
+  icon: any;
+  color?: 'blue' | 'green' | 'purple' | 'orange';
+  prefix?: string;
+}) {
+  const isPositive = change !== undefined && change >= 0
+  const colorClasses = color ? {
     blue: 'bg-blue-50 text-blue-600 border-blue-200',
     green: 'bg-green-50 text-green-600 border-green-200',
     purple: 'bg-purple-50 text-purple-600 border-purple-200',
     orange: 'bg-orange-50 text-orange-600 border-orange-200',
-  }[color] || 'bg-gray-50 text-gray-600 border-gray-200'
+  }[color] : 'bg-gray-50 text-gray-600 border-gray-200'
 
   return (
     <AnimatedCard>
@@ -308,7 +315,11 @@ function MetricCard({ title, value, change, icon: Icon, color, prefix = '' }: an
         </div>
         <p className="text-2xl font-bold">
           {prefix}
-          <AnimatedNumber value={value} format={(v: number) => typeof v === 'string' ? v : v.toLocaleString()} />
+          {typeof value === 'string' ? (
+            <span>{value}</span>
+          ) : (
+            <AnimatedNumber value={value} format={(v: number) => v.toLocaleString()} />
+          )}
         </p>
         {change !== undefined && (
           <div className={clsx(

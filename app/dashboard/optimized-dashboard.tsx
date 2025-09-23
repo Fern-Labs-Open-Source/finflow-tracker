@@ -40,7 +40,7 @@ import dynamic from 'next/dynamic'
 
 // Lazy load heavy components
 const DistributionCard = lazy(() => import('../../src/components/dashboard/distribution-card'))
-const PortfolioChart = lazy(() => import('../../src/components/charts/portfolio-chart'))
+const PortfolioChart = lazy(() => import('../../src/components/charts/portfolio-chart').then(m => ({ default: m.PortfolioChart })))
 
 // Memoized components
 const QuickStatCard = memo(({ 
@@ -50,8 +50,15 @@ const QuickStatCard = memo(({
   icon: Icon, 
   color = 'blue',
   delay = 0 
-}: any) => {
-  const isPositive = change > 0
+}: {
+  title: string;
+  value: string | number;
+  change?: number;
+  icon: any;
+  color?: 'blue' | 'green' | 'purple' | 'orange';
+  delay?: number;
+}) => {
+  const isPositive = change !== undefined && change > 0
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600 border-blue-200',
     green: 'bg-green-50 text-green-600 border-green-200',

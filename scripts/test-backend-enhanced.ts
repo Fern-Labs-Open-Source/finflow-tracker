@@ -292,7 +292,7 @@ class EnhancedBackendTester {
             this.addResult(
               '/api/accounts',
               'POST',
-              'WARN',
+              'FAIL',
               'Some validation messages could be improved'
             );
           }
@@ -350,7 +350,7 @@ class EnhancedBackendTester {
           this.addResult(
             '/api/accounts',
             'GET',
-            'WARN',
+            'FAIL',
             'Cache-Control header present but might need tuning'
           );
         }
@@ -399,7 +399,7 @@ class EnhancedBackendTester {
       this.addResult(
         '/api/accounts',
         'GET',
-        'WARN',
+        'FAIL',
         `Acceptable response time: ${responseTime}ms`
       );
     } else {

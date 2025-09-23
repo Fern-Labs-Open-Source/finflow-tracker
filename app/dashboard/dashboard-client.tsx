@@ -46,8 +46,15 @@ function QuickStatCard({
   icon: Icon, 
   color = 'blue',
   delay = 0 
-}: any) {
-  const isPositive = change > 0
+}: {
+  title: string;
+  value: string | number;
+  change?: number;
+  icon: any;
+  color?: 'blue' | 'green' | 'purple' | 'orange';
+  delay?: number;
+}) {
+  const isPositive = change !== undefined && change > 0
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600 border-blue-200',
     green: 'bg-green-50 text-green-600 border-green-200',
@@ -68,7 +75,11 @@ function QuickStatCard({
           <div>
             <p className="text-sm font-medium opacity-75">{title}</p>
             <p className="text-2xl font-bold mt-1">
-              <AnimatedNumber value={value} format={(v) => typeof v === 'string' ? v : formatCompactNumber(v)} />
+              {typeof value === 'string' ? (
+                <span>{value}</span>
+              ) : (
+                <AnimatedNumber value={value} format={formatCompactNumber} />
+              )}
             </p>
             {change !== undefined && (
               <div className={clsx('flex items-center gap-1 mt-2 text-sm', 

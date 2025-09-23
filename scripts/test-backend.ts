@@ -531,7 +531,7 @@ class BackendTester {
       if (unauthRes.status === 401 || unauthRes.status === 403) {
         this.addResult('/api/accounts', 'GET', 'PASS', 'Unauthorized request blocked');
       } else {
-        this.addResult('/api/accounts', 'GET', 'WARN', `Expected 401/403, got ${unauthRes.status} - Auth might be disabled in dev`);
+        this.addResult('/api/accounts', 'GET', 'FAIL', `Expected 401/403, got ${unauthRes.status} - Auth might be disabled in dev`);
       }
     } catch (error: any) {
       this.addResult('/api/accounts', 'GET', 'PASS', 'Unauthorized request blocked');
