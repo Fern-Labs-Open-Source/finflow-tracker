@@ -10,28 +10,65 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Single user model (personal finance app)
+// Multi-user model with OAuth support
 model User {
-  id           String   @id @default(uuid())
-  username     String   @unique
-  passwordHash String   @map("password_hash")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            String    @id @default(uuid())
+  email         String    @unique
+  username      String?   @unique
+  name          String?
+  passwordHash  String?   @map("password_hash")
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
+  // OAuth accounts
+  oauthAccounts OAuthAccount[]
+  
+  // User's financial data
+  institutions  Institution[]
+  financialAccounts Account[]
+  assets        Asset[]
+  
   @@map("users")
+}
+
+// OAuth account for social logins
+model OAuthAccount {
+  id                String  @id @default(uuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text @map("refresh_token")
+  access_token      String? @db.Text @map("access_token")
+  expires_at        Int?    @map("expires_at")
+  token_type        String? @map("token_type")
+  scope             String?
+  id_token          String? @db.Text @map("id_token")
+  session_state     String? @map("session_state")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+  @@map("oauth_accounts")
 }
 
 // Financial institutions (banks, brokerages, etc.)
 model Institution {
   id           String    @id @default(uuid())
-  name         String    @unique
+  userId       String    @map("user_id")
+  name         String
   type         String?   // bank, brokerage, investment, other
   color        String?   // Hex color for UI
   displayOrder Int       @default(0) @map("display_order")
   createdAt    DateTime  @default(now()) @map("created_at")
   
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accounts     Account[]
 
+  @@unique([userId, name])
+  @@index([userId])
   @@map("institutions")
 }
 
@@ -54,6 +91,7 @@ enum Currency {
 // Individual accounts
 model Account {
   id              String      @id @default(uuid())
+  userId          String      @map("user_id")
   institutionId   String      @map("institution_id")
   name            String
   type            AccountType
@@ -65,13 +103,15 @@ model Account {
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   institution     Institution         @relation(fields: [institutionId], references: [id], onDelete: Cascade)
   parentAccount   Account?            @relation("BrokerageAccounts", fields: [parentAccountId], references: [id])
   childAccounts   Account[]           @relation("BrokerageAccounts")
   snapshots       AccountSnapshot[]
   brokerageEntries BrokerageEntry[]
 
-  @@unique([institutionId, name])
+  @@unique([userId, institutionId, name])
+  @@index([userId])
   @@index([institutionId])
   @@index([isActive])
   @@map("accounts")
@@ -134,6 +174,7 @@ model ExchangeRate {
 // Phase 2: Asset tracking
 model Asset {
   id           String   @id @default(uuid())
+  userId       String   @map("user_id")
   name         String
   type         String   // vehicle, crypto, property, other
   currency     Currency
@@ -143,8 +184,11 @@ model Asset {
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
 
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   snapshots    AssetSnapshot[]
 
+  @@unique([userId, name])
+  @@index([userId])
   @@map("assets")
 }
 

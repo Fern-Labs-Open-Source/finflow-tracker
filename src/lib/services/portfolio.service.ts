@@ -49,13 +49,17 @@ export class PortfolioService {
    * Get detailed portfolio summary for dashboard
    */
   static async getDetailedPortfolioSummary(
-    includeInactive = false
+    includeInactive = false,
+    userId?: string
   ): Promise<DetailedPortfolioSummary> {
     const baseCurrency = 'EUR'; // Default base currency
     
     // Get all accounts with their latest snapshots
     const accounts = await prisma.account.findMany({
-      where: includeInactive ? {} : { isActive: true },
+      where: {
+        ...(userId ? { userId } : {}),
+        ...(includeInactive ? {} : { isActive: true })
+      },
       include: {
         institution: true,
         snapshots: {
@@ -140,11 +144,15 @@ export class PortfolioService {
    * Get current portfolio summary
    */
   static async getPortfolioSummary(
-    includeInactive = false
+    includeInactive = false,
+    userId?: string
   ): Promise<PortfolioSummary> {
     // Get all accounts with their latest snapshots
     const accounts = await prisma.account.findMany({
-      where: includeInactive ? {} : { isActive: true },
+      where: {
+        ...(userId ? { userId } : {}),
+        ...(includeInactive ? {} : { isActive: true })
+      },
       include: {
         institution: true,
         snapshots: {
@@ -202,7 +210,8 @@ export class PortfolioService {
   static async getHistoricalData(
     startDate: Date,
     endDate: Date,
-    includeInactive = false
+    includeInactive = false,
+    userId?: string
   ): Promise<HistoricalDataPoint[]> {
     // Get all snapshots in the date range
     const snapshots = await prisma.accountSnapshot.findMany({
@@ -211,7 +220,10 @@ export class PortfolioService {
           gte: startDate,
           lte: endDate,
         },
-        account: includeInactive ? {} : { isActive: true },
+        account: {
+          ...(userId ? { userId } : {}),
+          ...(includeInactive ? {} : { isActive: true })
+        },
       },
       include: {
         account: {

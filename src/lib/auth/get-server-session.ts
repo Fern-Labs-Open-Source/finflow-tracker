@@ -16,22 +16,33 @@ export async function requireAuth() {
   return session;
 }
 
-// API route middleware wrapper
+// Extend NextRequest to include user context
+export interface AuthenticatedRequest extends NextRequest {
+  userId?: string;
+  userEmail?: string;
+}
+
+// API route middleware wrapper with user context
 export function withAuth(
-  handler: (req: NextRequest, context?: any) => Promise<NextResponse>
+  handler: (req: AuthenticatedRequest, context?: any) => Promise<NextResponse>
 ) {
   return async (req: NextRequest, context?: any) => {
     try {
       const session = await getServerSession();
       
-      if (!session?.user) {
+      if (!session?.user?.id) {
         return NextResponse.json(
-          { error: 'Unauthorized' },
+          { error: 'Unauthorized - Please sign in' },
           { status: 401 }
         );
       }
       
-      return handler(req, context);
+      // Add user context to request
+      const authReq = req as AuthenticatedRequest;
+      authReq.userId = session.user.id;
+      authReq.userEmail = session.user.email || '';
+      
+      return handler(authReq, context);
     } catch (error) {
       console.error('Auth middleware error:', error);
       return NextResponse.json(
