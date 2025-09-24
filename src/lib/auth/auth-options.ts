@@ -2,7 +2,7 @@ import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import { Adapter } from 'next-auth/adapters';
 import { prisma } from '../db/prisma';
 import bcrypt from 'bcryptjs';
 
@@ -55,8 +55,110 @@ async function createInitialDataForOAuthUser(userId: string) {
   }
 }
 
+// Custom Prisma Adapter to handle our renamed models
+const customPrismaAdapter: Adapter = {
+  createUser: async (data) => {
+    const user = await prisma.user.create({
+      data: {
+        email: data.email,
+        name: data.name,
+        emailVerified: data.emailVerified,
+        image: data.image,
+      },
+    });
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name || null,
+      image: user.image || null,
+      emailVerified: user.emailVerified,
+    };
+  },
+  getUser: async (id) => {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) return null;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name || null,
+      image: user.image || null,
+      emailVerified: user.emailVerified,
+    };
+  },
+  getUserByEmail: async (email) => {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return null;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name || null,
+      image: user.image || null,
+      emailVerified: user.emailVerified,
+    };
+  },
+  getUserByAccount: async ({ providerAccountId, provider }) => {
+    const account = await prisma.oAuthAccount.findFirst({
+      where: { providerAccountId, provider },
+      include: { user: true },
+    });
+    if (!account?.user) return null;
+    return {
+      id: account.user.id,
+      email: account.user.email,
+      name: account.user.name || null,
+      image: account.user.image || null,
+      emailVerified: account.user.emailVerified,
+    };
+  },
+  updateUser: async ({ id, ...data }) => {
+    const user = await prisma.user.update({
+      where: { id },
+      data,
+    });
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name || null,
+      image: user.image || null,
+      emailVerified: user.emailVerified,
+    };
+  },
+  linkAccount: async (data) => {
+    await prisma.oAuthAccount.create({
+      data: {
+        userId: data.userId,
+        type: data.type,
+        provider: data.provider,
+        providerAccountId: data.providerAccountId,
+        refresh_token: data.refresh_token,
+        access_token: data.access_token,
+        expires_at: data.expires_at,
+        token_type: data.token_type,
+        scope: data.scope,
+        id_token: data.id_token,
+        session_state: data.session_state,
+      },
+    });
+  },
+  createSession: async ({ sessionToken, userId, expires }) => {
+    // Sessions are handled by JWT, not needed for JWT strategy
+    return { sessionToken, userId, expires };
+  },
+  getSessionAndUser: async (sessionToken) => {
+    // Sessions are handled by JWT, not needed for JWT strategy
+    return null;
+  },
+  updateSession: async ({ sessionToken }) => {
+    // Sessions are handled by JWT, not needed for JWT strategy
+    return null;
+  },
+  deleteSession: async (sessionToken) => {
+    // Sessions are handled by JWT, not needed for JWT strategy
+  },
+};
+
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: customPrismaAdapter,
   providers: [
     CredentialsProvider({
       name: 'credentials',
