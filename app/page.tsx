@@ -69,7 +69,7 @@ export default function Home() {
           </div>
           
           <div className="mt-4 text-center text-xs text-gray-400">
-            v1.2.0 • Deployed via Netlify • Last updated: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            v1.2.0 • Deployed via Netlify • OAuth Integration Active
           </div>
         </div>
       </main>

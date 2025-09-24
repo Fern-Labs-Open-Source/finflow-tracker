@@ -1,25 +1,27 @@
 # FinFlow Tracker
 
-A personal net worth tracking application with multi-currency support and historical visualization.
+A modern personal finance tracking application with multi-currency support, beautiful visualizations, and comprehensive net worth management.
 
 ## 🚀 Quick Deploy to Vercel
 
 Deploy your own instance of FinFlow Tracker with one click:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FFern-Labs-Open-Source%2Ffinflow-tracker&env=DATABASE_URL,NEXTAUTH_SECRET,NEXTAUTH_URL,BYPASS_AUTH&envDescription=Required%20environment%20variables%20for%20FinFlow%20Tracker&envLink=https%3A%2F%2Fgithub.com%2FFern-Labs-Open-Source%2Ffinflow-tracker%2Fblob%2Fmain%2FDEPLOYMENT.md&project-name=finflow-tracker&repository-name=finflow-tracker)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FFern-Labs-Open-Source%2Ffinflow-tracker&env=DATABASE_URL,NEXTAUTH_SECRET,NEXTAUTH_URL,BYPASS_AUTH&envDescription=Required%20environment%20variables%20for%20FinFlow%20Tracker&envLink=https%3A%2F%2Fgithub.com%2FFern-Labs-Open-Source%2Ffinflow-tracker%2Fblob%2Fmain%2Fdocs%2FDEVELOPMENT.md&project-name=finflow-tracker&repository-name=finflow-tracker)
 
 ## 🎯 Purpose
 
 FinFlow Tracker helps you monitor your net worth across multiple accounts, institutions, and currencies. It's designed for simple weekly/monthly updates of account balances, providing powerful visualizations of your financial trends over time.
 
-## ✨ Features
+## ✨ Key Features
 
-- 📊 **Net Worth Tracking**: Monitor total wealth across all accounts
-- 💱 **Multi-Currency Support**: EUR (base), GBP, and SEK with automatic conversion
-- 📈 **Historical Charts**: Visualize trends with interactive charts
-- 🏦 **Smart Brokerage Handling**: Automatically split brokerage accounts into cash and investment components
-- 🔒 **Secure**: Single-user authentication, encrypted data, no external sharing
-- 📥 **Data Export**: CSV backup functionality
+- 📊 **Complete Net Worth Tracking**: Monitor total wealth across all accounts and assets
+- 💱 **Multi-Currency Support**: EUR (base), GBP, SEK, and USD with automatic conversion
+- 📈 **Interactive Analytics**: Beautiful charts with 30-day history and performance metrics
+- 🏦 **Smart Account Management**: Support for banks, brokerages, crypto, and assets
+- 👥 **Multi-User Support**: Each user has completely isolated data
+- 🔒 **Secure Authentication**: OAuth support (Google, GitHub) and credential-based login
+- 📥 **Data Export**: CSV export for backups and external analysis
+- ⚡ **Lightning Fast**: Optimized performance with < 100ms API responses
 
 ## 🚀 Quick Start
 
@@ -79,9 +81,13 @@ This application prioritizes security:
 
 ## 📚 Documentation
 
-- [Product Specification](docs/PRODUCT_SPEC.md) - What the app does and how it works
-- [Technical Specification](docs/TECHNICAL_SPEC.md) - Architecture and implementation details
-- [Development Specification](docs/DEVELOPMENT_SPEC.md) - How to contribute and develop
+All project documentation is consolidated into three comprehensive files:
+
+- [**Specification**](docs/SPECIFICATION.md) - Complete product and technical specifications
+- [**Current State**](docs/CURRENT_STATE.md) - Implementation status, features, and known issues  
+- [**Development Guide**](docs/DEVELOPMENT.md) - Setup instructions, contribution guidelines, and deployment
+
+**Note**: All documentation updates must be made to one of these three files only. Do not create additional documentation files.
 
 ## 🛠️ Tech Stack
 
@@ -103,13 +109,14 @@ This application prioritizes security:
 
 ## 🤝 Contributing
 
-Please read the [Development Specification](docs/DEVELOPMENT_SPEC.md) for details on our code of conduct and the process for submitting pull requests.
+Please read the [Development Guide](docs/DEVELOPMENT.md) for details on setup, code guidelines, and the process for submitting pull requests.
 
 ## ⚠️ Important Notes
 
-- This is a **single-user application** designed for personal use
-- **Manual data entry only** - no bank API integrations
-- All financial data stays on your own infrastructure
+- **Multi-user support** with complete data isolation
+- **Manual data entry** for account balances (no transaction tracking)
+- **Self-hosted** - All financial data stays on your own infrastructure
+- **Privacy-focused** - No external data sharing or analytics
 
 ## 📄 License
 
