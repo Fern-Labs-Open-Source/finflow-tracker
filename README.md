@@ -91,12 +91,14 @@ All project documentation is consolidated into three comprehensive files:
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Prisma ORM
-- **Database**: PostgreSQL (Neon)
-- **Charts**: Recharts
-- **Authentication**: NextAuth.js
-- **Deployment**: Vercel
+- **Frontend**: Next.js 15.5, React 19, TypeScript, Tailwind CSS
+- **UI Components**: shadcn/ui with Radix UI
+- **Backend**: Next.js API Routes, Prisma ORM  
+- **Database**: PostgreSQL (Neon cloud hosting)
+- **Charts**: Recharts for interactive visualizations
+- **Authentication**: NextAuth.js with multiple providers
+- **State Management**: SWR for data fetching and caching
+- **Deployment**: Vercel (with Docker support)
 
 ## 📝 Scripts
 
