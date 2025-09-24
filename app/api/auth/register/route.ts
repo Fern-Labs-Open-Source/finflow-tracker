@@ -16,6 +16,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('Request body received:', { email: body.email, hasPassword: !!body.password });
     
+    // Check if sample data should be created (opt-in via query param or env var)
+    const url = new URL(req.url);
+    const createSampleData = url.searchParams.get('sampleData') === 'true' || 
+                           process.env.CREATE_SAMPLE_DATA_ON_REGISTRATION === 'true';
+    
     // Validate input
     const validatedData = registerSchema.parse(body);
     console.log('Validation passed');
@@ -58,14 +63,19 @@ export async function POST(req: NextRequest) {
     });
     console.log('User created successfully:', user.id);
     
-    // Create sample data for the new user
-    console.log('Creating sample data...');
-    await createSampleDataForUser(user.id);
-    console.log('Sample data created');
+    // Only create sample data if explicitly requested
+    if (createSampleData) {
+      console.log('Creating sample data (requested)...');
+      await createSampleDataForUser(user.id);
+      console.log('Sample data created');
+    } else {
+      console.log('Skipping sample data creation');
+    }
     
     return NextResponse.json({
       message: 'User registered successfully',
       user,
+      sampleDataCreated: createSampleData,
     }, { status: 201 });
     
   } catch (error) {

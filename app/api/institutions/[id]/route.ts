@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../../src/lib/db/prisma';
-import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { withAuthDev as withAuth, AuthenticatedRequest } from '../../../../src/lib/auth/with-auth-dev';
 import { updateInstitutionSchema } from '../../../../src/lib/validation/schemas';
 import { createValidationErrorResponse } from '../../../../src/lib/validation/error-formatter';
 import { z } from 'zod';
@@ -10,10 +10,13 @@ interface RouteParams {
 }
 
 // GET /api/institutions/[id] - Get a specific institution
-export const GET = withAuth(async (req: NextRequest, { params }: RouteParams) => {
+export const GET = withAuth(async (req: AuthenticatedRequest, { params }: RouteParams) => {
   try {
-    const institution = await prisma.institution.findUnique({
-      where: { id: params.id },
+    const institution = await prisma.institution.findFirst({
+      where: { 
+        id: params.id,
+        userId: req.userId // Ensure user owns this institution
+      },
       include: {
         accounts: {
           orderBy: { displayOrder: 'asc' },
@@ -42,10 +45,25 @@ export const GET = withAuth(async (req: NextRequest, { params }: RouteParams) =>
 });
 
 // PATCH /api/institutions/[id] - Update an institution
-export const PATCH = withAuth(async (req: NextRequest, { params }: RouteParams) => {
+export const PATCH = withAuth(async (req: AuthenticatedRequest, { params }: RouteParams) => {
   try {
     const body = await req.json();
     const validatedData = updateInstitutionSchema.parse(body);
+
+    // First check if user owns this institution
+    const existing = await prisma.institution.findFirst({
+      where: { 
+        id: params.id,
+        userId: req.userId
+      }
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Institution not found or unauthorized' },
+        { status: 404 }
+      );
+    }
 
     const institution = await prisma.institution.update({
       where: { id: params.id },
@@ -76,15 +94,18 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteParams) 
 });
 
 // DELETE /api/institutions/[id] - Delete an institution
-export const DELETE = withAuth(async (req: NextRequest, { params }: RouteParams) => {
+export const DELETE = withAuth(async (req: AuthenticatedRequest, { params }: RouteParams) => {
   try {
     // Check URL params for cascade option
     const url = new URL(req.url);
     const cascade = url.searchParams.get('cascade') === 'true';
     
-    // Check if institution exists
-    const institution = await prisma.institution.findUnique({
-      where: { id: params.id },
+    // Check if institution exists and user owns it
+    const institution = await prisma.institution.findFirst({
+      where: { 
+        id: params.id,
+        userId: req.userId // Ensure user owns this institution
+      },
       include: {
         accounts: {
           include: {
@@ -97,7 +118,7 @@ export const DELETE = withAuth(async (req: NextRequest, { params }: RouteParams)
 
     if (!institution) {
       return NextResponse.json(
-        { error: 'Institution not found' },
+        { error: 'Institution not found or unauthorized' },
         { status: 404 }
       );
     }
