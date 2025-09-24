@@ -541,6 +541,132 @@ npm run precommit
 
 ---
 
+## Lessons Learned & Best Practices
+
+### Common Pitfalls to Avoid
+
+Based on recent bug fixes and development experience, here are key lessons:
+
+#### 1. Enum Value Consistency
+**Problem**: Account type enums were inconsistent between frontend validation and backend models
+- Frontend used uppercase (e.g., 'CHECKING')
+- Backend expected lowercase (e.g., 'checking')
+
+**Solution**: Always verify enum values match across the stack
+```typescript
+// ❌ Bad - Mismatched enums
+const schema = z.object({
+  type: z.enum(['CHECKING', 'SAVINGS']) // Frontend
+});
+// Backend expects: ['checking', 'savings']
+
+// ✅ Good - Consistent enums
+const ACCOUNT_TYPES = ['checking', 'savings'] as const;
+const schema = z.object({
+  type: z.enum(ACCOUNT_TYPES)
+});
+```
+
+#### 2. Proper Hook Usage in Next.js
+**Problem**: Mutation functions weren't properly referenced, causing delete operations to fail
+
+**Solution**: Always destructure and use SWR mutations correctly
+```typescript
+// ❌ Bad - Undefined mutation
+const handleDelete = () => {
+  mutate(`/api/accounts/${id}`, ...); // mutate is undefined
+};
+
+// ✅ Good - Properly destructured
+const { trigger: deleteAccount } = useSWRMutation(...);
+const handleDelete = () => {
+  deleteAccount();
+};
+```
+
+#### 3. API Payload Validation
+**Problem**: Sending unnecessary fields in API requests caused validation errors
+
+**Solution**: Only send required fields, validate payloads before sending
+```typescript
+// ❌ Bad - Sending extra fields
+const payload = {
+  ...formData,
+  currentBalance: 0, // Not needed for creation
+};
+
+// ✅ Good - Clean payload
+const payload = {
+  name: formData.name,
+  type: formData.type,
+  institutionId: formData.institutionId,
+  // Don't include fields not needed by the endpoint
+};
+```
+
+#### 4. User Context Security
+**Problem**: Potential for cross-user data access if not properly filtered
+
+**Solution**: Always filter by authenticated user in API routes
+```typescript
+// ✅ Always include user context
+const accounts = await prisma.account.findMany({
+  where: { 
+    userId: session.user.id, // Critical!
+    ...otherFilters 
+  }
+});
+```
+
+#### 5. Proper Error Handling
+**Problem**: Silent failures made debugging difficult
+
+**Solution**: Always provide meaningful error messages
+```typescript
+// ✅ Good error handling
+try {
+  await deleteAccount(id);
+  toast.success('Account deleted successfully');
+} catch (error) {
+  console.error('Delete failed:', error);
+  toast.error('Failed to delete account. Please try again.');
+}
+```
+
+### Development Workflow Improvements
+
+#### 1. Testing Before Deployment
+- Always test CRUD operations locally
+- Verify form validations work correctly
+- Check that data displays properly
+- Test with both empty and populated databases
+
+#### 2. Database Migration Best Practices
+- Test migrations locally first
+- Keep migrations atomic and reversible
+- Document any manual migration steps
+- Verify foreign key constraints
+
+#### 3. Frontend-Backend Coordination
+- Ensure TypeScript types match API responses
+- Validate data at both frontend and backend
+- Use consistent naming conventions
+- Document API changes immediately
+
+#### 4. Performance Considerations
+- Use SWR for data fetching and caching
+- Implement optimistic updates for better UX
+- Debounce search and filter operations
+- Lazy load heavy components
+
+#### 5. Debugging Tips
+- Use browser DevTools Network tab to inspect API calls
+- Check Prisma query logs for database issues
+- Add console logs strategically during development
+- Use React DevTools for component debugging
+
+---
+
 ## Contributing
 
 ### How to Contribute
