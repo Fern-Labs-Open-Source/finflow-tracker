@@ -5,6 +5,7 @@ import GitHubProvider from 'next-auth/providers/github';
 import { Adapter } from 'next-auth/adapters';
 import { prisma } from '../db/prisma';
 import bcrypt from 'bcryptjs';
+import { MockGoogleProvider } from './mock-provider';
 
 // Helper function to create initial data for OAuth users
 async function createInitialDataForOAuthUser(userId: string) {
@@ -199,8 +200,11 @@ export const authOptions: NextAuthOptions = {
         };
       }
     }),
-    // OAuth providers - will be configured when credentials are provided
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? [
+    // OAuth providers
+    // Use mock provider in development if USE_MOCK_AUTH is set
+    ...(process.env.NODE_ENV === 'development' && process.env.USE_MOCK_AUTH === 'true' ? [
+      MockGoogleProvider()
+    ] : process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? [
       GoogleProvider({
         clientId: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
