@@ -58,7 +58,7 @@ async function createInitialDataForOAuthUser(userId: string) {
 
 // Custom Prisma Adapter to handle our renamed models
 const customPrismaAdapter: Adapter = {
-  createUser: async (data) => {
+  createUser: async (data: any) => {
     const user = await prisma.user.create({
       data: {
         email: data.email,
