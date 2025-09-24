@@ -158,7 +158,8 @@ const customPrismaAdapter: Adapter = {
 };
 
 export const authOptions: NextAuthOptions = {
-  adapter: customPrismaAdapter,
+  // Temporarily disable adapter for OAuth to work with JWT strategy
+  // adapter: customPrismaAdapter,
   providers: [
     CredentialsProvider({
       name: 'credentials',
