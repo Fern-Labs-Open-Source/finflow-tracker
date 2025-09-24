@@ -159,8 +159,7 @@ const customPrismaAdapter: Adapter = {
 };
 
 export const authOptions: NextAuthOptions = {
-  // Temporarily disable adapter for OAuth to work with JWT strategy
-  // adapter: customPrismaAdapter,
+  // No adapter - using JWT strategy for all auth methods
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -225,18 +224,79 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async signIn({ user, account, profile }) {
-      // For OAuth sign-ins, create initial data if needed
+      // Handle OAuth sign-ins
       if (account?.provider && account.provider !== 'credentials') {
-        await createInitialDataForOAuthUser(user.id);
+        try {
+          // Check if user exists
+          let dbUser = await prisma.user.findUnique({
+            where: { email: user.email! }
+          });
+          
+          if (!dbUser) {
+            // Create new user
+            dbUser = await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name,
+                image: user.image,
+                emailVerified: new Date(),
+              }
+            });
+            
+            // Create initial data for new user
+            await createInitialDataForOAuthUser(dbUser.id);
+          }
+          
+          // Store OAuth account info if not exists
+          const existingAccount = await prisma.oAuthAccount.findFirst({
+            where: {
+              userId: dbUser.id,
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+            }
+          });
+          
+          if (!existingAccount) {
+            await prisma.oAuthAccount.create({
+              data: {
+                userId: dbUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                refresh_token: account.refresh_token,
+                access_token: account.access_token,
+                expires_at: account.expires_at,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+                session_state: account.session_state as string | undefined,
+              }
+            });
+          }
+          
+          // Update user object with database ID
+          user.id = dbUser.id;
+          
+        } catch (error) {
+          console.error('Error in OAuth sign-in:', error);
+          return false;
+        }
       }
       return true;
     },
     async jwt({ token, user, account }) {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
+      // Initial sign in
+      if (account && user) {
+        return {
+          ...token,
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          provider: account.provider,
+        };
       }
+      
+      // Subsequent requests - token already has user info
       return token;
     },
     async session({ session, token }) {
