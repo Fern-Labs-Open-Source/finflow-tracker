@@ -279,6 +279,9 @@ export default function LoginPage() {
             </TabsContent>
           </Tabs>
         </CardContent>
+        <div className="mt-4 text-center text-xs text-gray-400">
+          v1.2.0 • Deployed via Netlify • OAuth Integration Active
+        </div>
       </Card>
     </div>
   )

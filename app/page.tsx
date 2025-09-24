@@ -67,6 +67,10 @@ export default function Home() {
           <div className="mt-8 text-center text-sm text-gray-500">
             Demo account available: username <code className="bg-gray-100 px-2 py-1 rounded">demo</code> password <code className="bg-gray-100 px-2 py-1 rounded">demo123</code>
           </div>
+          
+          <div className="mt-4 text-center text-xs text-gray-400">
+            v1.2.0 • Deployed via Netlify • Last updated: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </div>
         </div>
       </main>
     </div>
