@@ -1,31 +1,40 @@
-import { NextResponse } from 'next/server';
-import { prisma as db } from '../../../src/lib/db/prisma';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '../../../src/lib/db/prisma';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    // Check database connectivity
-    await db.$queryRaw`SELECT 1`;
+    // Test database connection
+    const userCount = await prisma.user.count();
+    
+    // Check environment variables
+    const envCheck = {
+      hasDatabase: !!process.env.DATABASE_URL,
+      hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
+      hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
+      hasGoogleAuth: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+      bypassAuth: process.env.BYPASS_AUTH,
+      nodeEnv: process.env.NODE_ENV,
+    };
     
     return NextResponse.json({
       status: 'healthy',
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV,
       database: 'connected',
-    });
+      userCount,
+      environment: envCheck,
+      timestamp: new Date().toISOString(),
+    }, { status: 200 });
+    
   } catch (error) {
-    console.error('Health check failed:', error);
-    return NextResponse.json(
-      {
-        status: 'unhealthy',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
-        database: 'disconnected',
-        error: error instanceof Error ? error.message : 'Unknown error',
+    console.error('Health check error:', error);
+    return NextResponse.json({
+      status: 'unhealthy',
+      database: 'disconnected',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      environment: {
+        hasDatabase: !!process.env.DATABASE_URL,
+        databaseUrl: process.env.DATABASE_URL ? 'Set (hidden)' : 'Not set',
       },
-      { status: 503 }
-    );
+      timestamp: new Date().toISOString(),
+    }, { status: 503 });
   }
 }

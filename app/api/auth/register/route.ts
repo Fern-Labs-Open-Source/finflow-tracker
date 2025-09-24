@@ -12,15 +12,20 @@ const registerSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('Registration endpoint called');
     const body = await req.json();
+    console.log('Request body received:', { email: body.email, hasPassword: !!body.password });
     
     // Validate input
     const validatedData = registerSchema.parse(body);
+    console.log('Validation passed');
     
     // Check if user already exists
+    console.log('Checking for existing user...');
     const existingUser = await prisma.user.findUnique({
       where: { email: validatedData.email }
     });
+    console.log('Existing user check complete:', existingUser ? 'User exists' : 'No user found');
     
     if (existingUser) {
       return NextResponse.json(
@@ -30,9 +35,12 @@ export async function POST(req: NextRequest) {
     }
     
     // Hash password
+    console.log('Hashing password...');
     const passwordHash = await bcrypt.hash(validatedData.password, 12);
+    console.log('Password hashed successfully');
     
     // Create user
+    console.log('Creating user...');
     const user = await prisma.user.create({
       data: {
         email: validatedData.email,
@@ -48,9 +56,12 @@ export async function POST(req: NextRequest) {
         createdAt: true,
       }
     });
+    console.log('User created successfully:', user.id);
     
     // Create sample data for the new user
+    console.log('Creating sample data...');
     await createSampleDataForUser(user.id);
+    console.log('Sample data created');
     
     return NextResponse.json({
       message: 'User registered successfully',
@@ -59,6 +70,7 @@ export async function POST(req: NextRequest) {
     
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.errors);
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },
         { status: 400 }
@@ -66,8 +78,9 @@ export async function POST(req: NextRequest) {
     }
     
     console.error('Registration error:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: 'Failed to register user' },
+      { error: 'Failed to register user', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
