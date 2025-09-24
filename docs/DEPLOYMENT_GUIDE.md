@@ -146,8 +146,24 @@ netlify env:unset VARIABLE_NAME
    - Add scopes: email, profile
 
 3. **Set Authorized Redirect URIs**:
+   - Production: `https://finflow-tracker-fern.netlify.app/api/auth/callback/google`
+   - Local development: `http://localhost:3000/api/auth/callback/google`
+
+4. **Add OAuth Credentials to Netlify**:
+   ```bash
+   # Using Netlify CLI
+   netlify env:set GOOGLE_CLIENT_ID "your-client-id" --force
+   netlify env:set GOOGLE_CLIENT_SECRET "your-client-secret" --force
    ```
-   https://finflow-tracker-fern.netlify.app/api/auth/callback/google
+
+   Or via Dashboard:
+   - Go to Site settings → Environment variables
+   - Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+   - Trigger redeployment
+
+5. **Current OAuth Credentials** (for testing):
+   - Client ID: `833642046035-f9avo67n1caqhkbg13sgrjukupimgp7d.apps.googleusercontent.com`
+   - These are configured locally but need to be added to Netlify
    http://localhost:3000/api/auth/callback/google  # For local dev
    ```
 
@@ -190,10 +206,27 @@ netlify env:unset VARIABLE_NAME
 3. **Setup environment**:
    ```bash
    cp .env.example .env.local
-   # Edit .env.local with your local database URL
+   ```
+   
+   Edit `.env.local` with:
+   ```env
+   # Database (use production Neon DB for now, or setup local PostgreSQL)
+   DATABASE_URL=postgresql://neondb_owner:npg_MCa2yow5epmz@ep-silent-cell-adwln18k-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+   
+   # NextAuth
+   NEXTAUTH_SECRET=your-secret-here
+   NEXTAUTH_URL=http://localhost:3000
+   
+   # OAuth (optional)
+   GOOGLE_CLIENT_ID=your-client-id
+   GOOGLE_CLIENT_SECRET=your-client-secret
+   
+   # Development settings
+   NODE_ENV=development
+   BYPASS_AUTH=false
    ```
 
-4. **Setup local database**:
+4. **Setup local database** (optional - currently using Neon):
    ```bash
    # Using Docker
    docker run -d \
@@ -203,6 +236,9 @@ netlify env:unset VARIABLE_NAME
      -p 5432:5432 \
      postgres:14
 
+   # Update DATABASE_URL in .env.local
+   # DATABASE_URL=postgresql://postgres:password@localhost:5432/finflow_dev
+   
    # Run migrations
    npx prisma migrate dev
    ```
