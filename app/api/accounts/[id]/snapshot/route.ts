@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../../../src/lib/db/prisma';
-import { withAuthDev as withAuth } from '../../../../../src/lib/auth/with-auth-dev';
+import { withAuthDev as withAuth, AuthenticatedRequest } from '../../../../../src/lib/auth/with-auth-dev';
 import { createAccountSnapshotSchema } from '../../../../../src/lib/validation/schemas';
 import { ExchangeRateService } from '../../../../../src/lib/services/exchange-rate.service';
 import { z } from 'zod';
@@ -11,8 +11,23 @@ interface RouteParams {
 }
 
 // GET /api/accounts/[id]/snapshot - Get snapshots for an account
-export const GET = withAuth(async (req: NextRequest, { params }: RouteParams) => {
+export const GET = withAuth(async (req: AuthenticatedRequest, { params }: RouteParams) => {
   try {
+    // First verify the account belongs to the user
+    const account = await prisma.account.findFirst({
+      where: {
+        id: params.id,
+        userId: req.userId // CRITICAL: Ensure account belongs to user
+      }
+    });
+
+    if (!account) {
+      return NextResponse.json(
+        { error: 'Account not found or access denied' },
+        { status: 404 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '30');
     const startDate = searchParams.get('startDate');
@@ -53,7 +68,7 @@ export const GET = withAuth(async (req: NextRequest, { params }: RouteParams) =>
 });
 
 // POST /api/accounts/[id]/snapshot - Create a snapshot for an account
-export const POST = withAuth(async (req: NextRequest, { params }: RouteParams) => {
+export const POST = withAuth(async (req: AuthenticatedRequest, { params }: RouteParams) => {
   try {
     const body = await req.json();
     const validatedData = createAccountSnapshotSchema.parse({
@@ -61,14 +76,17 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteParams) =
       accountId: params.id,
     });
 
-    // Get the account details
-    const account = await prisma.account.findUnique({
-      where: { id: params.id },
+    // Get the account details and verify ownership
+    const account = await prisma.account.findFirst({
+      where: { 
+        id: params.id,
+        userId: req.userId // CRITICAL: Ensure account belongs to user
+      },
     });
 
     if (!account) {
       return NextResponse.json(
-        { error: 'Account not found' },
+        { error: 'Account not found or access denied' },
         { status: 404 }
       );
     }
@@ -152,13 +170,43 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteParams) =
 });
 
 // DELETE /api/accounts/[id]/snapshot - Delete a snapshot
-export const DELETE = withAuth(async (req: NextRequest, { params }: RouteParams) => {
+export const DELETE = withAuth(async (req: AuthenticatedRequest, { params }: RouteParams) => {
   try {
+    // First verify the account belongs to the user
+    const account = await prisma.account.findFirst({
+      where: {
+        id: params.id,
+        userId: req.userId // CRITICAL: Ensure account belongs to user
+      }
+    });
+
+    if (!account) {
+      return NextResponse.json(
+        { error: 'Account not found or access denied' },
+        { status: 404 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const snapshotId = searchParams.get('snapshotId');
     const date = searchParams.get('date');
 
     if (snapshotId) {
+      // Verify the snapshot belongs to this account
+      const snapshot = await prisma.accountSnapshot.findFirst({
+        where: {
+          id: snapshotId,
+          accountId: params.id
+        }
+      });
+
+      if (!snapshot) {
+        return NextResponse.json(
+          { error: 'Snapshot not found or access denied' },
+          { status: 404 }
+        );
+      }
+
       await prisma.accountSnapshot.delete({
         where: { id: snapshotId },
       });

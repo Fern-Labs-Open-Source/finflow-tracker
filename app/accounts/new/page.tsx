@@ -17,14 +17,11 @@ interface Institution {
 }
 
 const ACCOUNT_TYPES = [
-  'checking',
-  'savings',
-  'investment',
-  'brokerage',
-  'retirement',
-  'credit',
-  'loan',
-  'other',
+  { value: 'CHECKING', label: 'Checking' },
+  { value: 'INVESTMENT', label: 'Investment' },
+  { value: 'BROKERAGE_TOTAL', label: 'Brokerage Total' },
+  { value: 'BROKERAGE_CASH', label: 'Brokerage Cash' },
+  { value: 'BROKERAGE_INVESTMENT', label: 'Brokerage Investment' },
 ]
 
 const CURRENCIES = [
@@ -47,7 +44,7 @@ export default function NewAccountPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
-    type: 'checking',
+    type: 'CHECKING',
     currency: 'EUR',
     institutionId: '',
     currentBalance: '',
@@ -87,32 +84,47 @@ export default function NewAccountPage() {
     setIsLoading(true)
     setError('')
 
+    // Validate institution ID
+    if (!formData.institutionId) {
+      setError('Please select an institution')
+      setIsLoading(false)
+      return
+    }
+
     try {
+      // First create the account (without currentBalance)
+      const accountData = {
+        name: formData.name,
+        type: formData.type,
+        currency: formData.currency,
+        institutionId: formData.institutionId,
+        isActive: formData.isActive,
+      }
+      
       const response = await fetch('/api/accounts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          currentBalance: parseFloat(formData.currentBalance),
-        }),
+        body: JSON.stringify(accountData),
       })
 
       if (response.ok) {
         const account = await response.json()
         
-        // Add initial snapshot
-        await fetch(`/api/accounts/${account.id}/snapshot`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            balance: parseFloat(formData.currentBalance),
-            date: new Date().toISOString(),
-          }),
-        })
+        // Add initial snapshot with the balance
+        if (formData.currentBalance && parseFloat(formData.currentBalance) > 0) {
+          await fetch(`/api/accounts/${account.id}/snapshot`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              balance: parseFloat(formData.currentBalance),
+              date: new Date().toISOString(),
+            }),
+          })
+        }
         
         router.push('/accounts')
       } else {
@@ -172,7 +184,7 @@ export default function NewAccountPage() {
                   onChange={(e) => setFormData({ ...formData, institutionId: e.target.value })}
                   required
                 >
-                  <option value="">Select an institution</option>
+                  {!formData.institutionId && <option value="">Select an institution</option>}
                   {institutions.map((inst) => (
                     <option key={inst.id} value={inst.id}>
                       {inst.name} ({inst.type})
@@ -213,8 +225,8 @@ export default function NewAccountPage() {
                   required
                 >
                   {ACCOUNT_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    <option key={type.value} value={type.value}>
+                      {type.label}
                     </option>
                   ))}
                 </select>

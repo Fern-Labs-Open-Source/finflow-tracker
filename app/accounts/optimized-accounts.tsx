@@ -35,7 +35,7 @@ import { VirtualList } from '../../src/components/ui/virtual-list'
 import { AnimatedCard } from '../../src/components/animated/fade-in'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import clsx from 'clsx'
-import { dataFetcher } from '../../src/lib/data-fetcher'
+
 import { useRenderTime, useDebouncedCallback, usePrefetch } from '../../src/lib/performance'
 
 // Account type configuration
@@ -191,7 +191,7 @@ AccountCard.displayName = 'AccountCard'
 export default function OptimizedAccounts() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const { accounts, isLoading, refresh: refreshAccounts } = useAccounts()
+  const { accounts, isLoading, refresh: refreshAccounts, deleteAccount: deleteAccountFromHook } = useAccounts()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'name' | 'balance' | 'type'>('balance')
@@ -269,40 +269,35 @@ export default function OptimizedAccounts() {
   // Handlers
   const handleDeleteAccount = useCallback(async (id: string) => {
     try {
-      await dataFetcher.fetch(`/api/accounts/${id}`, {
-        method: 'DELETE',
-        priority: 'high'
-      })
-      
-      // Optimistic update
-      mutate((accounts: any[]) => 
-        accounts?.filter(acc => acc.id !== id),
-        false
-      )
+      await deleteAccountFromHook(id)
+      refreshAccounts() // Refresh the list after deletion
     } catch (error) {
       console.error('Failed to delete account:', error)
     }
-  }, [mutate])
+  }, [deleteAccountFromHook, refreshAccounts])
   
   const handleUpdateBalance = useCallback(async (id: string, newBalance: number) => {
     try {
-      await dataFetcher.fetch(`/api/accounts/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ currentBalance: newBalance }),
-        headers: { 'Content-Type': 'application/json' }
+      const response = await fetch(`/api/accounts/${id}/snapshot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          balance: newBalance,
+          date: new Date().toISOString()
+        })
       })
       
-      // Optimistic update
-      mutate((accounts: any[]) => 
-        accounts?.map(acc => 
-          acc.id === id ? { ...acc, currentBalance: newBalance } : acc
-        ),
-        false
-      )
+      if (!response.ok) {
+        throw new Error('Failed to update balance')
+      }
+      
+      refreshAccounts() // Refresh to get updated balance
     } catch (error) {
       console.error('Failed to update balance:', error)
     }
-  }, [mutate])
+  }, [refreshAccounts])
   
   const handleBulkDelete = useCallback(async () => {
     if (selectedAccounts.size === 0) return
@@ -498,5 +493,4 @@ export default function OptimizedAccounts() {
   )
 }
 
-// Add mutate import
-import { mutate } from 'swr'
+
