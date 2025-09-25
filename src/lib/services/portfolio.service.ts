@@ -331,7 +331,8 @@ export class PortfolioService {
    */
   static async getPerformanceMetrics(
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    userId?: string
   ): Promise<{
     startValue: number;
     endValue: number;
@@ -339,25 +340,31 @@ export class PortfolioService {
     percentageChange: number;
     periodInDays: number;
   }> {
-    // Get start value
+    // Get start value - CRITICAL: Filter by userId
     const startSnapshots = await prisma.accountSnapshot.findMany({
       where: {
         date: {
           gte: startDate,
           lt: new Date(startDate.getTime() + 24 * 60 * 60 * 1000),
         },
-        account: { isActive: true },
+        account: { 
+          isActive: true,
+          ...(userId ? { userId } : {}) // Filter by user
+        },
       },
     });
 
-    // Get end value
+    // Get end value - CRITICAL: Filter by userId
     const endSnapshots = await prisma.accountSnapshot.findMany({
       where: {
         date: {
           gte: endDate,
           lt: new Date(endDate.getTime() + 24 * 60 * 60 * 1000),
         },
-        account: { isActive: true },
+        account: { 
+          isActive: true,
+          ...(userId ? { userId } : {}) // Filter by user
+        },
       },
     });
 
