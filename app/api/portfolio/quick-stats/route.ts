@@ -4,17 +4,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthDev as withAuth } from '../../../../src/lib/auth/with-auth-dev';
+import { withAuthDev as withAuth, AuthenticatedRequest } from '../../../../src/lib/auth/with-auth-dev';
 import { prisma } from '../../../../src/lib/db/prisma';
 import { CacheHeaders } from '../../../../src/lib/api/cache-headers';
 import { Decimal } from '@prisma/client/runtime/library';
 
 // GET /api/portfolio/quick-stats - Get quick portfolio statistics
-export const GET = withAuth(async (req: NextRequest) => {
+export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
+    // CRITICAL FIX: Filter by authenticated user to prevent data leakage
     // Get all accounts with latest snapshots in one query
     const accounts = await prisma.account.findMany({
       where: { 
+        userId: req.userId!, // CRITICAL: Only get accounts for authenticated user
         isActive: true,
       },
       include: {
@@ -101,6 +103,28 @@ export const GET = withAuth(async (req: NextRequest) => {
     const dailyChangePercent = yesterdayTotalEUR > 0 
       ? ((dailyChange / yesterdayTotalEUR) * 100).toFixed(2)
       : '0';
+
+    // Handle empty portfolio case - return zero values
+    if (accounts.length === 0 || totalValueEUR === 0) {
+      return NextResponse.json({
+        totalValue: {
+          eur: 0,
+          formatted: '€0.00',
+        },
+        dailyChange: {
+          amount: 0,
+          percent: 0,
+          formatted: '€0.00 (0.00%)',
+        },
+        accountCount: 0,
+        distribution: {
+          byType: [],
+          byCurrency: [],
+          byInstitution: [],
+        },
+        lastUpdated: new Date().toISOString(),
+      }, { headers: CacheHeaders.shortCache });
+    }
 
     const stats = {
       totalValue: {

@@ -9,6 +9,7 @@ import { Button } from '../../src/components/ui/button'
 import { Input } from '../../src/components/ui/input'
 import { formatCurrency, formatDate } from '../../src/lib/utils'
 import { EditableBalance } from '../../src/components/accounts/editable-balance'
+import { invalidatePortfolioData } from '../../src/hooks/use-portfolio'
 import { 
   PlusCircle,
   RefreshCw,
@@ -279,6 +280,9 @@ export default function OptimizedAccounts() {
         accounts?.filter(acc => acc.id !== id),
         false
       )
+      
+      // Invalidate portfolio data to reflect the changes
+      invalidatePortfolioData()
     } catch (error) {
       console.error('Failed to delete account:', error)
     }
@@ -299,6 +303,9 @@ export default function OptimizedAccounts() {
         ),
         false
       )
+      
+      // Invalidate portfolio data to reflect the new balance
+      invalidatePortfolioData()
     } catch (error) {
       console.error('Failed to update balance:', error)
     }

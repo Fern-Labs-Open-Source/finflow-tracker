@@ -17,10 +17,16 @@ export function withAuthDev(
       if (testBypass === 'test-mode') {
         // Bypass authentication for testing
         console.log('🔓 Auth bypassed for testing:', req.nextUrl.pathname);
-        // Add a test user auth object
+        // Add a test user auth object - support multiple test users
         const authReq = req as AuthenticatedRequest;
-        authReq.userId = 'test-user-id';
-        authReq.userEmail = 'test@example.com';
+        
+        // Check for specific test user ID in headers for multi-user testing
+        const testUserId = req.headers.get('X-Test-User-Id') || 'test-user-id';
+        const testUserEmail = req.headers.get('X-Test-User-Email') || `${testUserId}@example.com`;
+        
+        authReq.userId = testUserId;
+        authReq.userEmail = testUserEmail;
+        console.log('🔓 Test user authenticated:', { userId: testUserId, email: testUserEmail });
         return handler(authReq, context);
       }
       

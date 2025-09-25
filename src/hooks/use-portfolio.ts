@@ -1,4 +1,4 @@
-import useSWR from 'swr'
+import useSWR, { mutate as globalMutate } from 'swr'
 import { useCallback } from 'react'
 
 // Types
@@ -34,6 +34,7 @@ export interface QuickStats {
     }>
   }
   lastUpdated?: string
+  isEmpty?: boolean // Add this flag to track empty portfolio state
 }
 
 // Fetcher function with proper error handling
@@ -150,4 +151,13 @@ export function useOptimisticUpdate() {
   )
 
   return { optimisticUpdate }
+}
+
+// Global portfolio data invalidation
+export function invalidatePortfolioData() {
+  // Invalidate all portfolio-related endpoints
+  globalMutate('/api/portfolio/quick-stats')
+  globalMutate('/api/portfolio/summary')
+  globalMutate('/api/portfolio/performance')
+  globalMutate((key) => typeof key === 'string' && key.startsWith('/api/portfolio'), undefined, { revalidate: true })
 }

@@ -293,6 +293,70 @@ npm run db:seed
 
 ---
 
+## Security Best Practices (CRITICAL - December 2024 Update)
+
+### Multi-User Data Isolation
+**IMPORTANT**: All API endpoints MUST filter data by the authenticated user's ID to prevent data leakage.
+
+#### ✅ Correct Implementation
+```typescript
+// Always filter by userId at the database query level
+const accounts = await prisma.account.findMany({
+  where: { 
+    userId: session.user.id  // REQUIRED: Filter by authenticated user
+  }
+});
+```
+
+#### ❌ Incorrect Implementation (Security Vulnerability)
+```typescript
+// NEVER fetch all data without filtering
+const accounts = await prisma.account.findMany();  // WRONG: Returns all users' data
+```
+
+### API Route Security Checklist
+1. **Authentication Check**: Verify session exists
+2. **User ID Filtering**: Add `userId: session.user.id` to ALL queries
+3. **Ownership Verification**: Check resource ownership before updates/deletes
+4. **Error Handling**: Don't expose internal errors to clients
+
+### Testing Multi-User Scenarios
+Always test with multiple users to ensure data isolation:
+```typescript
+test('users cannot see each other\'s data', async () => {
+  const user1Data = await createTestUser('user1');
+  const user2Data = await createTestUser('user2');
+  
+  // User 1 should only see their own data
+  const response = await fetch('/api/accounts', {
+    headers: { cookie: user1Data.cookie }
+  });
+  
+  const accounts = await response.json();
+  expect(accounts).toHaveLength(user1Data.accountCount);
+  expect(accounts.every(a => a.userId === user1Data.id)).toBe(true);
+});
+```
+
+### Cache Invalidation Strategy
+When performing CRUD operations, always invalidate related caches:
+```typescript
+// After creating/updating/deleting data
+mutate('/api/portfolio/summary');  // Refresh portfolio
+mutate('/api/accounts');           // Refresh accounts list
+mutate('/api/dashboard/summary');  // Refresh dashboard
+```
+
+### Empty State Handling
+Always provide meaningful empty states with €0.00 defaults:
+```typescript
+const totalValue = holdings.length > 0 
+  ? holdings.reduce((sum, h) => sum + h.currentValue, 0)
+  : 0;  // Default to 0, not undefined or NaN
+
+return formatCurrency(totalValue || 0);  // Always ensure a number
+```
+
 ## Code Guidelines
 
 ### TypeScript Best Practices

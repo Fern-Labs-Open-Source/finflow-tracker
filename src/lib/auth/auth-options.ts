@@ -8,53 +8,11 @@ import bcrypt from 'bcryptjs';
 import { MockGoogleProvider } from './mock-provider';
 
 // Helper function to create initial data for OAuth users
-async function createInitialDataForOAuthUser(userId: string) {
-  try {
-    // Check if user already has data
-    const existingInstitutions = await prisma.institution.count({
-      where: { userId }
-    });
-    
-    if (existingInstitutions === 0) {
-      // Create sample data for new OAuth user
-      const institution = await prisma.institution.create({
-        data: {
-          userId,
-          name: 'My Bank',
-          type: 'bank',
-          color: '#4F46E5',
-          displayOrder: 0,
-        }
-      });
-      
-      const account = await prisma.account.create({
-        data: {
-          userId,
-          institutionId: institution.id,
-          name: 'Checking Account',
-          type: 'CHECKING',
-          currency: 'EUR',
-          displayOrder: 0,
-          isActive: true,
-        }
-      });
-      
-      // Add a welcome snapshot
-      await prisma.accountSnapshot.create({
-        data: {
-          accountId: account.id,
-          date: new Date(),
-          valueOriginal: 1000,
-          currency: 'EUR',
-          valueEur: 1000,
-          exchangeRate: 1,
-        }
-      });
-    }
-  } catch (error) {
-    console.error('Error creating initial data for OAuth user:', error);
-  }
-}
+// Removed: Demo data creation for OAuth users
+// Users should start with a clean slate and add their own financial data
+// async function createInitialDataForOAuthUser(userId: string) {
+//   // Function removed - no longer creating demo data automatically
+// }
 
 // Custom Prisma Adapter to handle our renamed models
 const customPrismaAdapter: Adapter = {
@@ -243,8 +201,8 @@ export const authOptions: NextAuthOptions = {
               }
             });
             
-            // Create initial data for new user
-            await createInitialDataForOAuthUser(dbUser.id);
+            // Do not create demo data for new users - they should start with a clean slate
+            // await createInitialDataForOAuthUser(dbUser.id);
           }
           
           // Store OAuth account info if not exists
