@@ -1,4 +1,4 @@
-import { OAuthConfig } from 'next-auth/providers';
+import { OAuthConfig } from 'next-auth/providers/oauth';
 
 /**
  * Mock OAuth Provider for local development
@@ -27,13 +27,13 @@ export function MockGoogleProvider(): OAuthConfig<any> {
       id: 'mock-client-id',
       secret: 'mock-client-secret',
     },
-    profile(profile) {
+    profile(profile: any) {
       return {
         id: profile.sub || profile.id,
         name: profile.name,
         email: profile.email,
         image: profile.picture,
-      };
+      } as any;
     },
   };
 }
