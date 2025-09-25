@@ -27,13 +27,16 @@ FinFlow Tracker helps you monitor your net worth across multiple accounts, insti
 
 ### Prerequisites
 
-- Node.js 20+ LTS
+- Node.js 18+ LTS
 - npm 10+
-- PostgreSQL database (or Neon cloud account)
-- Vercel account (for deployment)
+- PostgreSQL database (local or Neon cloud)
+- Git configured
 
-### Local Development Setup
+### Development Setup
 
+For detailed local development setup, see [📖 Local Development Guide](./docs/LOCAL_DEVELOPMENT.md)
+
+**Quick Setup:**
 1. **Clone the repository**
 ```bash
 git clone https://github.com/Fern-Labs-Open-Source/finflow-tracker.git
