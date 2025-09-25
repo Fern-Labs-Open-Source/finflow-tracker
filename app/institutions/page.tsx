@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../src/components/ui/card'
 import { Button } from '../../src/components/ui/button'
+import { invalidatePortfolioData } from '../../src/hooks/use-portfolio'
 import { 
   Building2,
   PlusCircle,
@@ -77,6 +78,8 @@ export default function InstitutionsPage() {
       
       if (response.ok) {
         setInstitutions(institutions.filter(inst => inst.id !== id))
+        // Invalidate all portfolio data to reflect the changes
+        invalidatePortfolioData()
       }
     } catch (error) {
       console.error('Failed to delete institution:', error)

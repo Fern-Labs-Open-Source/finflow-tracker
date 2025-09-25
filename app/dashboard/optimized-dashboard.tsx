@@ -41,6 +41,7 @@ import dynamic from 'next/dynamic'
 // Lazy load heavy components
 const DistributionCard = lazy(() => import('../../src/components/dashboard/distribution-card'))
 const PortfolioChart = lazy(() => import('../../src/components/charts/portfolio-chart').then(m => ({ default: m.PortfolioChart })))
+const EmptyPortfolioState = lazy(() => import('../../src/components/dashboard/EmptyPortfolioState').then(m => ({ default: m.EmptyPortfolioState })))
 
 // Memoized components
 const QuickStatCard = memo(({ 
@@ -297,6 +298,10 @@ export default function OptimizedDashboard() {
     )
   }
 
+  // Check if portfolio is empty (no accounts or total value is 0)
+  const isPortfolioEmpty = !stats?.accountCount || stats.accountCount === 0 || 
+                           (stats?.totalValue?.eur === 0 && stats?.accountCount === 0)
+
   return (
     <div className="min-h-screen">
       <AnimatePresence>
@@ -347,10 +352,17 @@ export default function OptimizedDashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        <LayoutGroup>
-          <div className="space-y-8">
-            {/* Portfolio Value Section */}
-            <section className="grid gap-6 lg:grid-cols-3">
+        {isPortfolioEmpty ? (
+          // Show empty state for new users
+          <Suspense fallback={<QuickStatsSkeleton />}>
+            <EmptyPortfolioState />
+          </Suspense>
+        ) : (
+          // Show regular dashboard for users with data
+          <LayoutGroup>
+            <div className="space-y-8">
+              {/* Portfolio Value Section */}
+              <section className="grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2">
                 <PortfolioValueCard stats={stats} isLoading={statsLoading} />
               </div>
@@ -440,6 +452,7 @@ export default function OptimizedDashboard() {
             </Suspense>
           </div>
         </LayoutGroup>
+        )}
       </main>
     </div>
   )
